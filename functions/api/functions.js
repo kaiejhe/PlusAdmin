@@ -118,6 +118,28 @@ async function updlist(params) {
     }
 }
 
+//批量添加方法
+async function foradd(request,env) {
+    const db = env.TokenD1;
+    const {cardtext = []} = request;
+    if(cardtext.length < 1 ) return json({ ok: false, msg: "当前页面不存在" }, 404);
+    const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
+    const Tssss = card_code.map((index) => {
+        return {
+         cardtext: index,
+         state: 'o1',
+         created_at: chinaTime
+       };
+    });
+    try {
+        const statements = Tssss.map((item) => db.prepare("INSERT INTO card (cardtext, state, created_at) VALUES (?, ?, ?)" ).bind(item.cardtext,item.state,item.created_at ));
+        await db.batch(statements);
+        return json({ ok: true, msg: "添加成功" }, 200);
+    } catch (error) {
+        return json({ ok: false, msg: "添加失败", error: error.message }, 500);
+    }
+}
+
 
 //管理员登录
 async function login(request,env) {

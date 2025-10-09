@@ -1,5 +1,4 @@
 <template>
-
     <div class="grid grid-cols-2 gap-4">
         <div class="col-span-1">
             <label  class="block text-sm/6 font-medium text-gray-900">生成数量</label>
@@ -9,7 +8,7 @@
             </div>
         </div>
         <div class="col-span-1 flex items-end justify-end gap-x-6">
-            <button type="submit" @click="SetCard"
+            <button type="button" @click="SetCard"
                 class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">生成订阅卡密</button>
         </div>
         <div class="col-span-2">
@@ -22,7 +21,7 @@
             </div>
         </div>
         <div class="col-span-1 flex   gap-x-6">
-            <button type="submit"
+            <button type="button" @click="Submit"
                 class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">保存订阅卡密</button>
         </div>
     </div>
@@ -31,12 +30,22 @@
 </template>
 <script setup>
 import { ref } from 'vue';
-import { randomGroup } from '../util/util';
+import { PostApi, randomGroup } from '../util/util';
 
 const SetNum = ref(1)
 const CardList = ref([])
 const SetCard = ()=>{
     const res =  randomGroup(SetNum.value)
     CardList.value = res
+}
+const Submit = async () => {
+    if (CardList.value.length < 1) return alert("请先生成订阅卡密")
+    const res = await PostApi(JSON.stringify({
+        msgoogle:"foradd",
+        data:{
+            table:"card",
+            data:{cardtext:CardList.value}
+        }
+    }))
 }
 </script>
