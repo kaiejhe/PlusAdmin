@@ -1,8 +1,5 @@
 import { ref } from "vue";
-import { useRouter } from 'vue-router'
-export const Tabtoutr = useRouter()
 const API_BASE ="https://plusadmin.pages.dev/api/functions"
-export const loginCookie = ref(null)
 
 //批量生成订阅卡密
 export function randomGroup(num = 1){
@@ -32,12 +29,4 @@ export async function PostApi(body){
         err(false)
     })
   })
-}
-
-//判断管理员登录状态
-export function Getlog(){
-    const user =  localStorage.getItem('username')
-        if(!user || user==''){
-            router.push('/')
-        }
 }

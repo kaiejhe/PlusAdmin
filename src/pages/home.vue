@@ -50,7 +50,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import headerView from '../components/headerView.vue'
-import { Getlog, Tabtoutr } from '../util/util'
+import { useRouter,useRoute } from 'vue-router'
+ const Tabtoutr = useRouter()
+ const TabPage = useRoute()
 const user = ref('')
 
 onMounted(() => {
@@ -68,6 +70,9 @@ function go(act) {
 }
     
     onMounted (()=>{
-        Getlog()
+        const user =  localStorage.getItem('username')
+        if(!user){
+            Tabtoutr.push('/')
+        }
     })
 </script>

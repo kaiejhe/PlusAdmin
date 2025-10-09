@@ -9,7 +9,7 @@ import submit from '../pages/submit.vue'
 
 
 const routes = [
-  {path: '/log',name: 'log',component: log,},
+  { path: '/',name: 'log',component: log,},
   { path: '/home', name: 'home',component:home},
   { path: '/settings', name: 'settings',component:settings},
   { path: '/card', name: 'card',component:card},

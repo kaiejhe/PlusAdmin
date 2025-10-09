@@ -44,12 +44,13 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router'
-import { Getlog, loginCookie, PostApi } from '../util/util';
+import { PostApi } from '../util/util';
+import { useRouter,useRoute } from 'vue-router'
+ const Tabtoutr = useRouter()
+ const TabPage = useRoute()
 const username = ref('')
 const password = ref('')
 const Onboo = ref(false)
-const router = useRouter()
 const handleSubmit = async (template)=>{
     if(username.value.length<5 || password.value.length<6) return alert("管理员帐号或密码错误")
     const res = await PostApi(JSON.stringify({msgoogle:"login",data:{username:username.value,password:password.value}}))
@@ -59,10 +60,17 @@ const handleSubmit = async (template)=>{
         password.value = ''
       }
       localStorage.setItem('username', 'admin')
-      router.push('/home')
+      Tabtoutr.push('/home')
     }
 }
   onMounted(()=>{
-    Getlog()
+    const user =  localStorage.getItem('username')
+        if(user){
+            if(TabPage.path==='/'){
+              Tabtoutr.push('/home')
+            }
+        }else{
+          Tabtoutr.push('/')
+        }
   })
 </script>
