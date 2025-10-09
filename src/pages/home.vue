@@ -72,7 +72,8 @@ function go(act) {
 }
     
     onMounted (()=>{
-        if(!localStorage.getItem('token')){
+        const user =  localStorage.getItem('username')
+        if(!user || user==''){
             alert("请先登录管理员帐号")
             router.push('/')
         }
