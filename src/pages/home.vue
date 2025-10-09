@@ -52,6 +52,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import headerView from '../components/headerView.vue'
+import { loginCookie } from '../util/util'
 
 const router = useRouter()
 const user = ref('')
@@ -74,4 +75,10 @@ function go(act) {
     
 }
     
+    onpageshow(()=>{
+        if(!loginCookie.value){
+            alert("请先登录管理员帐号")
+            router.push({ name: 'Login' })
+        }
+    })
 </script>

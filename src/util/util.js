@@ -1,4 +1,7 @@
+import { ref } from "vue";
+
 const API_BASE ="https://plusadmin.pages.dev/api/functions"
+export const loginCookie = ref(null)
 
 //批量生成订阅卡密
 export function randomGroup(num = 1){
