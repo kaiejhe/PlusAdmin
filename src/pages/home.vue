@@ -61,11 +61,7 @@ onMounted(() => {
     user.value = sessionStorage.getItem('user') || ''
 })
 
-function logout() {
-    sessionStorage.removeItem('authed')
-    sessionStorage.removeItem('user')
-    router.push({ name: 'Login' })
-}
+
 
 function go(act) {
     if(act==='settings') return router.push({ name: 'settings' })
@@ -78,7 +74,7 @@ function go(act) {
     onMounted (()=>{
         if(!loginCookie.value){
             alert("请先登录管理员帐号")
-            router.push({ name: 'Login' })
+            router.push({ name: '/' })
         }
     })
 </script>
