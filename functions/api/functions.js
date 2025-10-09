@@ -20,11 +20,12 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'dellist'  && request.method === 'POST') return dellist(data, env)
     if (msgoogle === 'updlist'  && request.method === 'POST') return updlist(data, env)
     if (msgoogle === 'getlist'  && request.method === 'POST') return getlist(data, env)
+    if (msgoogle === 'foradd'  && request.method === 'POST') return foradd(data, env)
   return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
 //通用添加数据
-async function addlist(params) {
+async function addlist(request,env) {
     const db = env.TokenD1
     const { table, data } = request;
     if (!table || !data) return json({ ok: false, msg: "当前页面不存在" }, 400);
@@ -43,8 +44,8 @@ async function addlist(params) {
 }
 
 //通用删除数据
-async function addlist(params) {
-    const db = env.PageToken
+async function addlist(request,env) {
+    const db = env.TokenD1
     const { table,id } = request;
     if (!table||!id) return json({ ok: false, msg: "当前页面不存在" }, 400);
     const sql = `DELETE FROM ${table} WHERE id = ?`;
@@ -61,8 +62,8 @@ async function addlist(params) {
 }
 
 //通用修改
-async function updlist(params) {
-    const db = env.PageToken
+async function updlist(request,env) {
+    const db = env.TokenD1
     const { table, updates,id } = request;
     if (!table || !updates ||!id) return json({ ok: false, msg: "当前页面不存在" }, 400);
     const columns = await getTableMeta(db, table);
@@ -84,8 +85,8 @@ async function updlist(params) {
 }
 
 //通用查询
-async function updlist(params) {
-    const db = env.PageToken
+async function updlist(request,env) {
+    const db = env.TokenD1
     const { table, filters = {}, page = 1, pageSize = 10 } = request;
     if (!table) {
       return json({ ok: false, msg: "当前页面不存在" }, 400);
