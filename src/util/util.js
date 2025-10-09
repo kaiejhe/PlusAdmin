@@ -1,4 +1,4 @@
-const API_BASE ="https://fakaadmin.pages.dev/api/tmadmin"
+const API_BASE ="https://plusadmin.pages.dev/api/functions"
 
 //批量生成订阅卡密
 export function randomGroup(num = 1){
