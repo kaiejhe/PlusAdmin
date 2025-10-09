@@ -43,9 +43,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router'
-import { loginCookie, PostApi } from '../util/util';
+import { Getlog, loginCookie, PostApi } from '../util/util';
 const username = ref('')
 const password = ref('')
 const Onboo = ref(false)
@@ -62,5 +62,7 @@ const handleSubmit = async (template)=>{
       router.push('/home')
     }
 }
-
+  onMounted(()=>{
+    Getlog()
+  })
 </script>
