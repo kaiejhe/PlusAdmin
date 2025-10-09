@@ -43,8 +43,7 @@ const Submit = async () => {
     const res = await PostApi(JSON.stringify({
         msgoogle:"foradd",
         data:{
-            table:"card",
-            data:{cardtext:CardList.value}
+            cardtext:CardList.value
         }
     }))
 }

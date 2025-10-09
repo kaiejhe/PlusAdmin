@@ -21,7 +21,7 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'updlist'  && request.method === 'POST') return updlist(data, env)
     if (msgoogle === 'getlist'  && request.method === 'POST') return getlist(data, env)
     if (msgoogle === 'foradd'  && request.method === 'POST') return foradd(data, env)
-  return json({ ok:false, msg:'当前页面不存在' }, 404)
+  return json({ ok:false, msg:'当前页面不存在1' }, 404)
 }
 
 //通用添加数据
