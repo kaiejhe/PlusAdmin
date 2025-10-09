@@ -57,10 +57,8 @@ const handleSubmit = async (template)=>{
       if(!Onboo.value){
         username.value = ''
         password.value = ''
-        loginCookie.value = null
-      }else{
-      loginCookie.value = {username:username.value,password:password.value}
       }
+      localStorage.setItem('username', 'admin')
       router.push('/home')
     }
 }

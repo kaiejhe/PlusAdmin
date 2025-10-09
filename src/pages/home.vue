@@ -72,7 +72,7 @@ function go(act) {
 }
     
     onMounted (()=>{
-        if(!loginCookie.value){
+        if(!localStorage.getItem('token')){
             alert("请先登录管理员帐号")
             router.push('/')
         }
