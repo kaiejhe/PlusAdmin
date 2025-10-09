@@ -45,7 +45,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router'
-import { PostApi } from '../util/util';
+import { loginCookie, PostApi } from '../util/util';
 const username = ref('')
 const password = ref('')
 const Onboo = ref(false)
@@ -57,6 +57,9 @@ const handleSubmit = async (template)=>{
       if(!Onboo.value){
         username.value = ''
         password.value = ''
+        loginCookie.value = null
+      }else{
+      loginCookie.value = {username:username.value,password:password.value}
       }
       router.push('/home')
     }
