@@ -44,7 +44,7 @@ async function addlist(request,env) {
 }
 
 //通用删除数据
-async function addlist(request,env) {
+async function dellist(request,env) {
     const db = env.TokenD1
     const { table,id } = request;
     if (!table||!id) return json({ ok: false, msg: "当前页面不存在" }, 400);
@@ -85,7 +85,7 @@ async function updlist(request,env) {
 }
 
 //通用查询
-async function updlist(request,env) {
+async function getlist(request,env) {
     const db = env.TokenD1
     const { table, filters = {}, page = 1, pageSize = 10 } = request;
     if (!table) {
