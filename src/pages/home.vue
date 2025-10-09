@@ -74,7 +74,7 @@ function go(act) {
     onMounted (()=>{
         if(!loginCookie.value){
             alert("请先登录管理员帐号")
-            router.push({ name: '/log' })
+            router.push('/log')
         }
     })
 </script>
