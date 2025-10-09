@@ -25,7 +25,7 @@
 import HeaderView from '../components/headerView.vue'
 import { ref } from 'vue'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
-import Card from '../components/Card.vue'
+import Card from '../components/card.vue'
 import { FunnelIcon } from '@heroicons/vue/24/outline'
 import Setcard from '../components/setcard.vue'
 
