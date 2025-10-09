@@ -123,7 +123,7 @@ async function updlist(request,env) {
 async function foradd(request,env) {
     const db = env.TokenD1;
     const {cardtext = []} = request;
-    if(cardtext.length < 1 ) return json({ ok: false, msg: "当前页面不存在" }, 404);
+    if(cardtext.length < 1 ) return json({ ok: false, msg: "当前页面不存在1" }, 404);
     const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
     const Tssss = card_code.map((index) => {
         return {
