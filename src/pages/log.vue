@@ -54,11 +54,11 @@ const handleSubmit = async (template)=>{
     if(username.value.length<5 || password.value.length<6) return alert("管理员帐号或密码错误")
     const res = await PostApi(JSON.stringify({msgoogle:"login",data:{username:username.value,password:password.value}}))
     if(res.ok){
-      if(Onboo.value){
-        console.log("已勾选", Onboo.value)
-      }else{
-        console.log("未勾选", Onboo.value)
+      if(!Onboo.value){
+        username.value = ''
+        password.value = ''
       }
+      router.push('/home')
     }
 }
 
