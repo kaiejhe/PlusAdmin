@@ -1,7 +1,6 @@
 <template>
     <div class="mx-auto w-full max-w-[750px] p-4">
         <headerView />
-
         <div class="mt-6">
             <div class="grid grid-cols-2 gap-4">
                 <!-- 基础设置 -->
@@ -50,11 +49,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import headerView from '../components/headerView.vue'
-import { loginCookie } from '../util/util'
-
-const router = useRouter()
+import { Getlog, Tabtoutr } from '../util/util'
 const user = ref('')
 
 onMounted(() => {
@@ -64,18 +60,14 @@ onMounted(() => {
 
 
 function go(act) {
-    if(act==='settings') return router.push({ name: 'settings' })
-    if(act==='card') return router.push({ name: 'card' })
-    if(act==='token') return router.push({ name: 'token' })
-    if(act==='submit') return router.push({ name: 'submit' })
+    if(act==='settings') return Tabtoutr.push({ name: 'settings' })
+    if(act==='card') return Tabtoutr.push({ name: 'card' })
+    if(act==='token') return Tabtoutr.push({ name: 'token' })
+    if(act==='submit') return Tabtoutr.push({ name: 'submit' })
     
 }
     
     onMounted (()=>{
-        const user =  localStorage.getItem('username')
-        if(!user || user==''){
-            alert("请先登录管理员帐号")
-            router.push('/')
-        }
+        Getlog()
     })
 </script>
