@@ -9,13 +9,13 @@
           <div>
             <label for="username" class="block text-sm/6 font-medium text-gray-900 dark:text-white">帐号</label>
             <div class="mt-2">
-              <input type="text" name="username" id="username" autocomplete="username"  class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+              <input type="text" v-model="username" name="username" id="username" autocomplete="username"  class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
             </div>
           </div>
           <div>
-            <label for="uspass" class="block text-sm/6 font-medium text-gray-900 dark:text-white">密码</label>
+            <label for="password" class="block text-sm/6 font-medium text-gray-900 dark:text-white">密码</label>
             <div class="mt-2">
-              <input type="password" name="uspass" id="uspass" autocomplete="current-password" class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+              <input type="password" v-model="password" name="password" id="password" autocomplete="current-password" class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
             </div>
           </div>
           <div class="flex items-center justify-between">
@@ -45,12 +45,15 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router'
-
+import { PostApi } from '../util/util';
+const username = ref('')
+const password = ref('')
 const JsonData = ref()
 const router = useRouter()
-const handleSubmit = (template)=>{
-    console.log("--------", template)
-    router.push('/home')
+const handleSubmit = async (template)=>{
+    if(username.value.length<5 || password.value.length<6) return alert("管理员帐号或密码错误")
+    const res = await PostApi(JSON.stringify({msgoogle:"login",data:{username:username.value,password:password.value}}))
+    console.log("----------", res)
 }
 
 </script>

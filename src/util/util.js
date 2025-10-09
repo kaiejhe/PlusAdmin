@@ -29,8 +29,3 @@ export async function PostApi(body){
     })
   })
 }
-
-//JSOS返回值
-export async function JSON_Api(body){
-
-}

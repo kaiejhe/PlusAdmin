@@ -23,7 +23,7 @@ export async function onRequestPost({ request, env }) {
 //管理员登录
 
 async function login(request,env) {
-  const db = env.tokensql;
+  const db = env.TokenD1;
   if (!db) return json({ ok: false, msg: "服务器异常" }, 500);
   try {
     const { username, password } = request;
