@@ -29,11 +29,8 @@ async function login(request,env) {
     if (!username || !password) return json({ ok: false, msg: "管理员账号密码不能为空" }, 400);
     const probe = await db.prepare("SELECT 1 AS ok").first();
     if (!probe) return json({ ok: false, msg: "D1 探活失败" }, 500);
-    const user = await db.prepare("SELECT  username, password, cokies, intnum FROM userAdmin WHERE username = ? AND password = ?").bind(username, password).first();
-    if (!user) {
-      await db .prepare(`UPDATE userAdmin SET intnum = MAX(COALESCE(intnum, 0) - 1, 0),last_login_at = datetime('now')WHERE username = ?`).bind(username).run();
-      return json({ ok: false, msg: "用户名或密码错误" }, 401);
-    }
+    const user = await db.prepare("SELECT  username, password FROM admin WHERE username = ? AND password = ?").bind(username, password).first();
+    if (!user) return json({ ok: false, msg: "用户名或密码错误" }, 401);
     return json({ ok: true, msg: "登录成功" }, 200);
 
   } catch (e) {
