@@ -1,4 +1,3 @@
-import { data } from "autoprefixer";
 
 //协议头处理,跨域
 const json = (data, status = 200, headers = {}) =>
