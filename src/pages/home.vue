@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted,onpageshow } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import headerView from '../components/headerView.vue'
 import { loginCookie } from '../util/util'
