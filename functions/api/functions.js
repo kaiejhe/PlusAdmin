@@ -107,9 +107,11 @@ async function getlist(request,env) {
     }
     const offset = (page - 1) * pageSize;
     const sql = `SELECT * FROM ${table} ${whereClause} LIMIT ?, ?`;
+    const countSql = `SELECT COUNT(*) AS total FROM ${table} ${whereClause}`;
+
     try {
         // 查询总数量
-        const countRes = await db.prepare(sql).bind(...values).first();
+        const countRes = await db.prepare(countSql).bind(...values).first();
         const total = countRes?.total || 0;
         // 查询当前页数据
         const res = await db.prepare(sql).bind(...values, offset, pageSize).all();
