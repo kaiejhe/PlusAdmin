@@ -61,6 +61,7 @@
             </div>
         </div>
     </div>
+    <Pagination></Pagination>
 </template>
 
 <script setup>
@@ -69,6 +70,7 @@ import { TrashIcon,Square2StackIcon  } from '@heroicons/vue/24/outline'
 import loading from './loading.vue'
 import { ref } from 'vue'
 import { PostApi } from '../util/util'
+import Pagination from './Pagination.vue'
 const log = ref(false)
 const Pops = defineProps({
     CardList: {
@@ -91,7 +93,7 @@ const Getselect = async(ES,MS)=>{
             }
         }
     })
-    const res =  await PostApi(JSONDATA)
+    await PostApi(JSONDATA)
     log.value = false
 }
 </script>

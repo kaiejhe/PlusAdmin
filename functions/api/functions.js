@@ -108,9 +108,13 @@ async function getlist(request,env) {
     const offset = (page - 1) * pageSize;
     const sql = `SELECT * FROM ${table} ${whereClause} LIMIT ?, ?`;
     try {
+        // 查询总数量
+        const countRes = await db.prepare(countSql).bind(...values).first();
+        const total = countRes?.total || 0;
+        // 查询当前页数据
         const res = await db.prepare(sql).bind(...values, offset, pageSize).all();
         if (res) {
-            return json({ ok: true, data: res.results }, 200);
+            return json({ ok: true, data: res.results,total }, 200);
         } else {
             return json({ ok: false, msg: "没有找到数据" }, 404);
         }

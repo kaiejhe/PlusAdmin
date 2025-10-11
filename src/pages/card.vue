@@ -25,13 +25,13 @@
 <script setup>
 import HeaderView from '../components/headerView.vue'
 import { onMounted, ref } from 'vue'
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
+import { TabGroup, TabList, Tab, } from '@headlessui/vue'
 import Card from '../components/card.vue'
 import Setcard from '../components/setcard.vue'
 import { PostApi } from '../util/util'
 import loading from '../components/loading.vue'
 const Page = ref(1) //分页默认
-const PageSise = ref(10)
+const PageSise = ref(5)
 const selectedIndex = ref(0)
 const Cardlist = ref([])
 const log = ref(true)
@@ -53,8 +53,8 @@ function SetPy(e,cat){
         msgoogle:"getlist",
         data:{
             table:"card",
-            Page:Page.value,
-            PageSise:PageSise.value,
+            page:Page.value,
+            pageSize:PageSise.value,
             filters:{state:cat.key}
         }
     })
@@ -84,8 +84,9 @@ onMounted(()=>{
         msgoogle:"getlist",
         data:{
             table:"card",
-            Page:Page.value,
-            PageSise:PageSise.value
+            page:Page.value,
+            pageSize:PageSise.value,
+            filters:{state:'o1'}
         }
     })
     GetList(JSONDATA)
