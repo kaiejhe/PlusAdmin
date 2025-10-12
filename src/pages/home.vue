@@ -52,7 +52,6 @@ import { ref, onMounted } from 'vue'
 import headerView from '../components/headerView.vue'
 import { useRouter,useRoute } from 'vue-router'
  const Tabtoutr = useRouter()
- const TabPage = useRoute()
 const user = ref('')
 
 onMounted(() => {

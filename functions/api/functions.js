@@ -39,7 +39,7 @@ async function addlist(request,env) {
         const res = await env.PageToken.prepare(sql).bind(...validValues).run();
         return json({ ok: true, msg: "新增成功", id: res.meta.last_row_id }, 201);
     } catch (error) {
-        return json({ ok: false, msg: "插入数据失败", error: String(error) }, 500);
+        return json({ ok: false, msg: "添加数据失败", error: String(error) }, 500);
     }
 }
 
@@ -116,9 +116,9 @@ async function getlist(request,env) {
         // 查询当前页数据
         const res = await db.prepare(sql).bind(...values, offset, pageSize).all();
         if (res) {
-            return json({ ok: true, data: res.results,total }, 200);
+            return json({ ok: true, data: res.results,total,msg:"查询成功" }, 200);
         } else {
-            return json({ ok: false, msg: "没有找到数据" }, 404);
+            return json({ ok: false, msg: "查询失败" }, 404);
         }
     } catch (error) {
         return json({ ok: false, msg: "查询失败", error: String(error) }, 500);
