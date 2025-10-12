@@ -186,6 +186,18 @@ export async function onRequestOptions() {
     },
   });
 }
+//随机订单号生成
+function generateOrderId() {
+  // 工具函数，生成指定长度的随机大写字符串
+  function randomStr(len) {
+    return Math.random().toString(36).substring(2, 2 + len);
+  }
+  const part1 = randomStr(4); // 前 6 位
+  const part2 = randomStr(4); // 中间 4 位
+  const part3 = randomStr(4); // 中间 4 位
+  const part4 = randomStr(4); // 后 6 位
+  return `${part1}-${part2}-${part3}-${part4}`;
+}
 
 //后台提交订单
 export async function AdminToken(){
