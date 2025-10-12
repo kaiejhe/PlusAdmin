@@ -240,7 +240,7 @@ export async function AdminToken(request, env){
       .bind(orderId, Email, Cardcode, Token, "o1", timestamp)
       .run();
     if (res.meta.last_row_id<1) {
-      return json({ ok: false, msg: "Token提交失败,请重试" }, 500);
+      return json({ ok: false, msg:res }, 500);
     }
     return json({ ok: true, msg: "Plus订阅任务提交成功" }, 200);
   } catch (error) {}
