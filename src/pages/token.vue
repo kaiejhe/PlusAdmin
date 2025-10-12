@@ -15,7 +15,7 @@
         </TabList>
         <div class="mt-4 rounded-xl bg-white p-4 ring-1 ring-slate-200 shadow-sm">
           <div v-if="selectedIndex<3">
-            <Card :CardList="Cardlist" @dellist="dellist" @updlist="updlist"></Card>
+            <PlusTokenlist :CardList="Cardlist" @dellist="dellist" @updlist="updlist"></PlusTokenlist>
             <Pagination v-model:page="Page" @change="onPageChange" :total="total" :pageSize="PageSise"></Pagination>
           </div>
           <div class="" v-else>
@@ -53,7 +53,7 @@
 import HeaderView from '../components/headerView.vue'
 import { onMounted, ref } from 'vue'
 import { TabGroup, TabList, Tab, } from '@headlessui/vue'
-import Card from '../components/card.vue'
+import PlusTokenlist from '../components/PlusTokenlist.vue'
 import { PostApi } from '../util/util'
 import loading from '../components/loading.vue'
 import Pagination from '../components/Pagination.vue'
@@ -67,10 +67,10 @@ const Cardlist = ref([])
 const log = ref(true)
 const TextArea = ref('')
 const categories = [
-  { key: 'o1', label: '未使用' },
-  { key: 'o2',    label: '已使用' },
-  { key: 'o3',  label: '已废弃' },
-  { key: 'all',     label: '创建卡密' },
+  { key: 'o1', label: '等待订阅' },
+  { key: 'o2',    label: '订阅完成' },
+  { key: 'o3',  label: '订阅失败' },
+  { key: 'all',     label: '提交Token' },
 ]
 
 //清空输入框
@@ -198,9 +198,10 @@ const updlist = async (item)=>{
         data:{
             table:"plusorder",
             id:item.id,
-            updates:{state:item.state}
+            updates:{State:item.State}
         }
     })
+    console.log("---------", JSONDATA)
     const res = await PostApi(JSONDATA)
     if(res.ok){
       await  GetList()
