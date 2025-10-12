@@ -200,7 +200,7 @@ function generateOrderId() {
 }
 
 //后台提交订单
-export async function AdminToken(){
+export async function AdminToken(request, env){
   const db = env.TokenD1;
   const { Token, Cardcode } = request;
   if (!Token || !Cardcode || !db) {
@@ -212,7 +212,7 @@ export async function AdminToken(){
       .bind(Token)
       .all();
     if (existingOrder.results.length > 0)
-      return fail("正在订阅中,请勿重复提交");
+      return json({ ok: false, msg: "正在订阅中,请勿重复提交" }, 500);
     // 🔹 解析 JWT
     const parts = Token.split(".");
     if (parts.length !== 3)
@@ -233,13 +233,13 @@ export async function AdminToken(){
     const orderInsert = await db
       .prepare(
         `
-    INSERT INTO tokenorder (id, Email, Cardkey, AccessToken, State, Createdat)
+    INSERT INTO plusorder (id, Email, Cardkey, AccessToken, State, Createdat)
     VALUES (?, ?, ?, ?, ?, ?)
     `
       )
       .bind(orderId, Email, Cardcode, Token, "o1", timestamp)
       .run();
-    if (updateCard.changes === 0 || orderInsert.changes === 0) {
+    if (res.meta.last_row_id<1) {
       return json({ ok: false, msg: "Token提交失败,请重试" }, 500);
     }
     return json({ ok: true, msg: "Plus订阅任务提交成功" }, 200);
