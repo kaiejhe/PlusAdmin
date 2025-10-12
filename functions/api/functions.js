@@ -74,7 +74,7 @@ async function updlist(request,env) {
     const setClause = validKeys.map(key => `${key} = ?`).join(", ");
     const sql = `UPDATE ${table} SET ${setClause} WHERE id = ?`;
     try {
-        const res = await db.prepare(sql).bind(...validValues, Number(id)).run();
+        const res = await db.prepare(sql).bind(...validValues, id).run();
         if (res.success) {
             return json({ ok: true, msg: "更新成功" }, 200);
         } else {
