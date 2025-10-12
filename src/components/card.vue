@@ -78,20 +78,6 @@ const Pops = defineProps({
 //获取单选状态
 const Getselect = async(item)=>{
     emit('updlist', item)
-    log.value = true
-    const JSONDATA = JSON.stringify({
-        msgoogle:"updlist",
-        data:{
-            table:"card",
-            id:MS.id,
-            updates:{
-                state:ES,
-                usaeged_at:Date.now()
-            }
-        }
-    })
-    await PostApi(JSONDATA)
-    log.value = false
 }
 const emit = defineEmits(['dellist','updlist'])
 //删除数据

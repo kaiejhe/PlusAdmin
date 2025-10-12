@@ -1,60 +1,90 @@
 // src/apijs/Apijs.js
 import { createVNode, render } from 'vue'
 
-// 存储已挂载组件的 Map
+// —— 静态导入所有会用到的组件 —— //
+import Toast from '../components/onShow/Toast.vue'
+import Modal from '../components/onShow/Modal.vue'
+
+// 单例缓存
 const _instances = new Map()
 
-// 动态加载并挂载组件
 function _mountSingleton(component) {
   const container = document.createElement('div')
   document.body.appendChild(container)
   const vnode = createVNode(component)
   render(vnode, container)
-  return { container, exposed: vnode.component.exposed }
+  const exposed = vnode.component?.exposed
+  return { container, exposed }
 }
 
-// 销毁已挂载的组件
 function _destroySingleton(key) {
-  if (_instances.has(key)) {
-    const { container } = _instances.get(key)
-    render(null, container)  // 销毁组件渲染
-    document.body.removeChild(container)  // 移除 DOM 元素
-    _instances.delete(key)  // 从 Map 中删除
+  const inst = _instances.get(key)
+  if (!inst) return
+  if (inst.timer) {
+    clearTimeout(inst.timer)
   }
+  render(null, inst.container)
+  document.body.removeChild(inst.container)
+  _instances.delete(key)
 }
 
-// 获取或挂载组件实例
-async function _getExposed(key, component) {
+function _getExposed(key, component) {
   if (!_instances.has(key)) {
-    const { default: loadedComponent } = await import(component)
-    const { container, exposed } = _mountSingleton(loadedComponent)
-    _instances.set(key, { container, exposed })  // 缓存组件实例和容器
+    const { container, exposed } = _mountSingleton(component)
+    if (!exposed) {
+      console.error(`[Tm] component for "${key}" exposes nothing.`)
+    }
+    _instances.set(key, { container, exposed, timer: null })
   }
   return _instances.get(key).exposed
 }
 
-// 创建 uni 全局 API
+// 全局 API
 const Tm = {
-  // 延迟加载组件：调用时加载
-  async showMessage(msgOrOpts, type = 'success', duration = 2000) {
-    const exposed = await _getExposed('message', '../components/ModalDialogs.vue')
+  // —— Toast：和你原来的逻辑一致 —— //
+  showMessage(msgOrOpts, type = 'success', duration = 2000) {
+    const exposed = _getExposed('message', Toast)
+    if (!exposed?.open) return
+
     const opts = typeof msgOrOpts === 'string'
       ? { message: msgOrOpts, type, duration }
       : msgOrOpts
+
+    const inst = _instances.get('message')
+    if (inst?.timer) {
+      clearTimeout(inst.timer)
+      inst.timer = null
+    }
+
     exposed.open(opts)
 
-    // 自动销毁组件
-    setTimeout(() => {
-      _destroySingleton('message')  // 在使用完后销毁
-    }, duration)  // 等待 `duration` 毫秒后销毁
+    const dismissDelay = opts?.duration ?? duration
+    const timer = setTimeout(() => {
+      const current = _instances.get('message')
+      if (current?.timer === timer) {
+        _destroySingleton('message')
+      }
+    }, dismissDelay)
+
+    if (inst) {
+      inst.timer = timer
+    }
   },
 
-  // 以后可以继续添加更多方法：
-  // showConfirm, showToast 等
+  // —— Modal：Promise 化，等待用户操作 —— //
+  async showModal(options = {}) {
+    const exposed = _getExposed('modal', Modal)
+    if (!exposed?.open) return Promise.resolve({ confirm: false, cancel: true })
+    // 直接把 Promise 结果透传给调用方
+    return exposed.open(options)
+  },
+
+  // 可选：暴露手动销毁
+  destroy(key) {
+    _destroySingleton(key)
+  }
 }
 
-if (typeof window !== 'undefined') {
-  window.Tm = Tm  // 挂载到全局
-}
-
+// 浏览器环境挂全局
+if (typeof window !== 'undefined') window.Tm = Tm
 export default Tm

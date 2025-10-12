@@ -106,7 +106,6 @@ const GetList = async()=>{
     }
     setTimeout(()=>{
         log.value = false
-        Tm.showMessage({message:res.msg})
     },500)
     
 }
@@ -116,6 +115,12 @@ onMounted(()=>{
 
 //删除数据
 const dellist = async(tr)=>{
+
+    const mpdal = await Tm.showModal()
+    if(mpdal.cancel){
+        console.log("", mpdal)
+        return
+    }
     logName.value = "正在删除"
     log.value = true
     const JSONDATA = JSON.stringify({
@@ -127,11 +132,12 @@ const dellist = async(tr)=>{
     })
     const res = await PostApi(JSONDATA)
     if(res.ok){
-        Tm.showMessage({message:res.msg})
-        GetList()
-    }else{
-        log.value = false
+       await GetList()
     }
+    setTimeout(() => {
+        log.value = false
+        Tm.showMessage({message:res.msg})
+    }, 500);
 }
 //修改数据状态
 const updlist = async (item)=>{
@@ -146,11 +152,12 @@ const updlist = async (item)=>{
     })
     const res = await PostApi(JSONDATA)
     if(res.ok){
-        Tm.showMessage({message:res.msg})
-        GetList()
-    }else{
-        log.value = true
+      await  GetList()
     }
+    setTimeout(() => {
+        log.value = false
+        Tm.showMessage({message:res.msg})
+    }, 500);
 }
 
 </script>

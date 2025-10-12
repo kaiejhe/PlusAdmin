@@ -21,7 +21,8 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'updlist'  && request.method === 'POST') return updlist(data, env)
     if (msgoogle === 'getlist'  && request.method === 'POST') return getlist(data, env)
     if (msgoogle === 'foradd'  && request.method === 'POST') return foradd(data, env)
-  return json({ ok:false, msg:'当前页面不存在1' }, 404)
+    if (msgoogle === 'AdminToken'  && request.method === 'POST') return AdminToken(data, env)
+    return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
 //通用添加数据
@@ -185,3 +186,61 @@ export async function onRequestOptions() {
     },
   });
 }
+
+//后台提交订单
+export async function AdminToken(){
+  const db = env.TokenD1;
+  const { Token, Cardcode } = request;
+  if (!Token || !Cardcode || !db) {
+      return json({ ok: false, msg: "当前页面不存在" }, 500);
+  }
+  try {
+    const existingOrder = await db
+      .prepare("SELECT id FROM plusorder WHERE AccessToken = ? AND State ='o1'")
+      .bind(Token)
+      .all();
+    if (existingOrder.results.length > 0)
+      return fail("正在订阅中,请勿重复提交");
+    // 🔹 解析 JWT
+    const parts = Token.split(".");
+    if (parts.length !== 3)
+      return json({ ok: false, msg: "JSON参数错误" }, 500);
+    let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    const payloadDecoded = decodeURIComponent(escape(atob(base64)));
+    const payloadJson = JSON.parse(payloadDecoded);
+    const Email = payloadJson["https://api.openai.com/profile"]?.email;
+    const exp = payloadJson.exp;
+    if (!Email || !exp) return json({ ok: false, msg: "JSON参数错误" }, 500);
+    if (Math.floor(Date.now() / 1000) > exp)
+      return json({ ok: false, msg: "JSON参数已过期" }, 500);
+    // 🔹 生成唯一订单ID
+    const orderId = generateOrderId();
+    const timestamp = Math.floor(Date.now() / 1000);
+    // 🔹 写入订单
+    const orderInsert = await db
+      .prepare(
+        `
+    INSERT INTO tokenorder (id, Email, Cardkey, AccessToken, State, Createdat)
+    VALUES (?, ?, ?, ?, ?, ?)
+    `
+      )
+      .bind(orderId, Email, Cardcode, Token, "o1", timestamp)
+      .run();
+    if (updateCard.changes === 0 || orderInsert.changes === 0) {
+      return json({ ok: false, msg: "Token提交失败,请重试" }, 500);
+    }
+    return json({ ok: true, msg: "Plus订阅任务提交成功" }, 200);
+  } catch (error) {}
+     return json({ ok: false, msg: "Plus订阅任务提交失败" }, 500);
+}
+
+
+
+
+
+
+
+
+
+//后台验证TOKEN是否符合
