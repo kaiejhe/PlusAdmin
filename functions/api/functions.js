@@ -51,7 +51,7 @@ async function dellist(request,env) {
     if (!table||!id) return json({ ok: false, msg: "当前页面不存在" }, 400);
     const sql = `DELETE FROM ${table} WHERE id = ?`;
     try {
-        const res = await db.prepare(sql).bind(Number(id)).run();
+        const res = await db.prepare(sql).bind(id).run();
         if(res.success){
             return json({ ok: true, msg: "删除成功" }, 200);
         }else{
