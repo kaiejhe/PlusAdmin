@@ -19,12 +19,8 @@ export async function PostApi(body){
         headers: { "content-type": "application/json" },
         body: body,
     }).then(async(res)=>{
-        if(res.ok){
-        const Tm = await res.json()
-        resizeBy(Tm)
-      }else{
-        err(false)
-      }
+      const Tm = await res.json()
+      resizeBy(Tm)
     }).catch((err)=>{
         err(false)
     })

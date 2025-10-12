@@ -79,20 +79,25 @@ const getElementById = ()=>{
 }
 
 //提交Token订阅
-const SetPostApi = ()=>{
+const SetPostApi = async()=>{
+  const match = TextArea.value.match(/"accessToken":"([\s\S]*?)"/);
+  if(!match || !match[1]){
+    Tm.showMessage("请输入完整的JSON参数")
+    return 
+  }
+  log.value = true
+  logName.value = "正在提交"
   const JSONDATA = JSON.stringify({
-    msgoogle:"addlist",
+    msgoogle:"AdminToken",
     data:{
-      table:"plusorder",
-      data:{
-        Email:"",
-        Cardkey:"PLUS-ADMM-ADMM-ADMM",
-        AccessToken:"",
-        State:"o1",
-        Createdat:""
-      }
+      Token:match[1],
+      Cardcode:"PLUX-XXXX-XXXX-ADMM"
     }
   })
+  const res = await PostApi(JSONDATA)
+  log.value = false
+  Tm.showMessage(res.msg)
+  console.log("----", res)
 }
 
 //监听分页

@@ -204,7 +204,7 @@ export async function AdminToken(request, env){
   const db = env.TokenD1;
   const { Token, Cardcode } = request;
   if (!Token || !Cardcode || !db) {
-      return json({ ok: false, msg: "当前页面不存在" }, 500);
+      return json({ ok: false, msg: "当前页面不存在" }, 200);
   }
   try {
     const existingOrder = await db
@@ -212,20 +212,20 @@ export async function AdminToken(request, env){
       .bind(Token)
       .all();
     if (existingOrder.results.length > 0)
-      return json({ ok: false, msg: "正在订阅中,请勿重复提交" }, 500);
+      return json({ ok: false, msg: "正在订阅中,请勿重复提交" }, 200);
     // 🔹 解析 JWT
     const parts = Token.split(".");
     if (parts.length !== 3)
-      return json({ ok: false, msg: "JSON参数错误" }, 500);
+      return json({ ok: false, msg: "JSON参数错误" }, 200);
     let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     while (base64.length % 4) base64 += "=";
     const payloadDecoded = decodeURIComponent(escape(atob(base64)));
     const payloadJson = JSON.parse(payloadDecoded);
     const Email = payloadJson["https://api.openai.com/profile"]?.email;
     const exp = payloadJson.exp;
-    if (!Email || !exp) return json({ ok: false, msg: "JSON参数错误" }, 500);
+    if (!Email || !exp) return json({ ok: false, msg: "JSON参数错误" }, 200);
     if (Math.floor(Date.now() / 1000) > exp)
-      return json({ ok: false, msg: "JSON参数已过期" }, 500);
+      return json({ ok: false, msg: "JSON参数已过期" }, 200);
     // 🔹 生成唯一订单ID
     const orderId = generateOrderId();
     const timestamp = Math.floor(Date.now() / 1000);
@@ -240,7 +240,7 @@ export async function AdminToken(request, env){
       .bind(orderId, Email, Cardcode, Token, "o1", timestamp)
       .run();
     if (orderInsert.meta.last_row_id<1) {
-      return json({ ok: false, msg:"Plus订阅任务提交失败" }, 500);
+      return json({ ok: false, msg:"Plus订阅任务提交失败" }, 200);
     }
     return json({ ok: true, msg: "Plus订阅任务提交成功" }, 200);
   } catch (error) {}
