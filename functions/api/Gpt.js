@@ -1,5 +1,5 @@
-// functions/api/Gpt.js  —— Cloudflare Pages Functions (Modules)
-// 访问路径：/api/Gpt
+// functions/api/Gpt.js  —— Cloudflare Pages Functions
+// 路由：/api/Gpt  (只接受 POST)
 
 const CORS_ALLOW_ORIGIN = "*"; // 按需改成你的前端域名
 const corsBaseHeaders = {
@@ -9,34 +9,13 @@ const corsBaseHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
-const hopByHopHeaders = new Set([
-  "host",
-  "content-length",
-  "connection",
-  "keep-alive",
-  "proxy-authenticate",
-  "proxy-authorization",
-  "te",
-  "trailer",
-  "transfer-encoding",
-  "upgrade",
-]);
-
-function filterHeaders(headers) {
-  const out = new Headers();
-  for (const [k, v] of headers.entries()) {
-    if (!hopByHopHeaders.has(k.toLowerCase())) out.set(k, v);
-  }
-  return out;
-}
-
-// 处理 CORS 预检
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: corsBaseHeaders });
 }
 
-// 只允许 POST
-export async function onRequest({ request }) {
+export async function onRequest(context) {
+  const { request, env } = context;
+
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Only POST is allowed" }), {
       status: 405,
@@ -44,27 +23,33 @@ export async function onRequest({ request }) {
     });
   }
 
+  if (!env.OPENAI_API_KEY) {
+    return new Response(JSON.stringify({ error: "Missing OPENAI_API_KEY" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json; charset=utf-8", ...corsBaseHeaders },
+    });
+  }
+
   try {
-    // 目标地址：按需改为具体 API 路径，例如 https://chatgpt.com/backend-api/xxx
-    const targetUrl = "https://chatgpt.com";
+    // 你的前端把 payload 直接 POST 给本接口即可（例如 { model, messages, ... }）
+    const body = await request.text(); // 原样转发；也可用 await request.json()
 
-    const outgoingHeaders = filterHeaders(request.headers);
-    // 如果你确定发 JSON，可以强制：
-    // outgoingHeaders.set("Content-Type", "application/json");
+    // 选一个你需要的官方API路径（示例：Chat Completions）
+    const targetUrl = "https://api.openai.com/v1/chat/completions";
 
-    // 透传请求体（流式，不用先读出来）
     const upstream = await fetch(targetUrl, {
       method: "POST",
-      headers: outgoingHeaders,
-      body: request.body,
-      // redirect: "follow", // 如需跟随重定向可打开
+      headers: {
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body, // 把前端传来的 JSON 透传过去
     });
 
-    const respHeaders = filterHeaders(upstream.headers);
-    // 注入/覆盖 CORS
+    // 把上游返回原样转给调用者
+    const respHeaders = new Headers(upstream.headers);
     for (const [k, v] of Object.entries(corsBaseHeaders)) respHeaders.set(k, v);
 
-    // 原样返回上游状态码/响应体（流式）
     return new Response(upstream.body, {
       status: upstream.status,
       statusText: upstream.statusText,
