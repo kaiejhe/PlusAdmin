@@ -1,33 +1,40 @@
-// functions/api/Gpt.js  —— Cloudflare Pages Functions
-// 用法：POST /api/Gpt  带 JSON：
-// {
-//   "account_id": "f381a384-c9f9-4cde-b68c-921c8316b87e",
-//   "emails": ["512422914@qq.com"],
-//   "role": "standard-user",               // 可选，默认 standard-user
-//   "resend_emails": true,                 // 可选，默认 true
-//   // 下面这些对应你要转发的头，从前端传入，避免硬编码：
-//   "authorization": "Bearer xxx",         // 必填：你的 Authorization
-//   "cookie": "__cf_bm=...; _cfuvid=...",  // 可选：你贴的 Cookie
-//   "user_agent": "Mozilla/5.0 ...",       // 可选
-//   "origin": "https://chatgpt.com",       // 可选，默认 https://chatgpt.com
-//   "referer": "https://chatgpt.com/"      // 可选，默认 https://chatgpt.com/
-// }
+const json = (data, status = 200, headers = {}) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      ...headers,
+    },
+  });
 
-const CORS_ALLOW_ORIGIN = "*"; // 按需改成你的前端域名
-const corsHeaders = {
-  "Access-Control-Allow-Origin": CORS_ALLOW_ORIGIN,
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, *",
-  "Access-Control-Max-Age": "86400",
-};
-
+// 👇 必须新增：处理 OPTIONS 预检请求
 export async function onRequestOptions() {
-  return new Response(null, { status: 204, headers: corsHeaders });
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
 }
 
-export async function onRequest({ request }) {
-    return request
-  const heade =  new Response(JSON.stringify({ error: "Only POST is allowed" }), {
+//进入方法接受的参数
+export async function onRequestPost({ request}) {
+  const { msgoogle, data } = await request.json().catch(() => ({}));
+  if (msgoogle === "login" && request.method === "POST")
+    return login(data);
+  return json({ ok: false, msg: "当前页面不存在" }, 404);
+}
+
+export async function login(params) {
+
+
+    return params
+    const heade =  new Response(JSON.stringify({ error: "Only POST is allowed" }), {
     status: 405,
     headers: {
       "Content-Type": "application/json",
@@ -44,6 +51,5 @@ export async function onRequest({ request }) {
     role: request.role,
     resend_emails: request.resend_emails
   })
-  
-   
+    
 }
