@@ -235,7 +235,7 @@ export async function AdminToken(request, env){
     const orderInsert = await db
       .prepare(
         `
-    INSERT INTO plusorder (usOrder, Email, Cardkey, AccessToken, State, Createdat)
+    INSERT INTO plusorder (usOrder, Email, Cardkey, AccessToken, State, created_at)
     VALUES (?, ?, ?, ?, ?, ?)
     `
       )
