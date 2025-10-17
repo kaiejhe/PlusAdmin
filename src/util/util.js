@@ -2,10 +2,10 @@ import { ref } from "vue";
 const API_BASE ="https://plusadmin.pages.dev/api/functions"
 
 //批量生成订阅卡密
-export function randomGroup(num = 1){
+export function randomGroup(num = 1,Text){
     const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const group = () => Array.from({ length: 4 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join('');
-    const make = () => `PLUS-${group()}-${group()}-${group()}`;
+    const make = () => `${Text}-${group()}-${group()}-${group()}`;
     const set = new Set();
     while (set.size < num) set.add(make());
     console.log("222", set)

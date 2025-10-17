@@ -129,18 +129,20 @@ async function getlist(request,env) {
 //批量添加方法
 async function foradd(request,env) {
     const db = env.TokenD1;
-    const {cardtext = []} = request;
-    if(cardtext.length < 1 ) return json({ ok: false, msg: "当前页面不存在1" }, 404);
+    const {CardList = [],type,CardTime} = request;
+    if(CardList.length < 1 ) return json({ ok: false, msg: "当前页面不存在1" }, 404);
     const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
-    const Tssss = cardtext.map((index) => {
+    const Tssss = CardList.map((index) => {
         return {
-         cardtext: index,
+         CardList: index,
          state: 'o1',
-         created_at: chinaTime
+         created_at: chinaTime,
+         type:type,
+         CardTime:CardTime
        };
     });
     try {
-        const statements = Tssss.map((item) => db.prepare("INSERT INTO card (cardtext, state, created_at) VALUES (?, ?, ?)" ).bind(item.cardtext,item.state,item.created_at ));
+        const statements = Tssss.map((item) => db.prepare("INSERT INTO card (cardtext, state, created_at,type,CardTime) VALUES (?, ?, ?)" ).bind(item.cardtext,item.state,item.created_at,item.type,item.CardTime ));
         await db.batch(statements);
         return json({ ok: true, msg: "添加成功" }, 200);
     } catch (error) {
