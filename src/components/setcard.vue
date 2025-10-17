@@ -1,5 +1,5 @@
 <template>
-    <div class="grid grid-cols-4 gap-4">
+    <div class="grid grid-cols-4 gap-3">
         <div class="col-span-1">
             <label class="block text-sm/6 font-medium text-gray-900">生成数量</label>
             <div class="mt-2">
@@ -47,9 +47,9 @@
         </div>
         <div class="col-span-1 flex items-end justify-end gap-x-6">
             <button type="button" @click="SetCard"
-                class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">生成订阅卡密</button>
+                class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">生成密钥</button>
         </div>
-        <div class="col-span-5">
+        <div class="col-span-4">
             <label class="block text-sm/6 font-medium text-gray-900">生成后的订阅卡密</label>
             <div class="mt-2">
                 <textarea readonly :value="Array.isArray(CardList) ? CardList.join('\n') : CardList"

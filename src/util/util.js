@@ -36,5 +36,5 @@ export function GetTime(Time){
   const h = String(date.getHours()).padStart(2, '0');
   const m = String(date.getMinutes()).padStart(2, '0');
   const s = String(date.getSeconds()).padStart(2, '0');
-  return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+  return `${M}-${D} ${h}:${m}`;
 }

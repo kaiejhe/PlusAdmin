@@ -4,10 +4,10 @@
         <div class="mt-6">
             <div class="grid grid-cols-2 gap-4">
                 <!-- 基础设置 -->
-                <button @click="go('settings')"
+                <button @click="go('TeamOrder')"
                     class="group relative rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.99]">
                     <div class="text-3xl mb-2 select-none">⚙️</div>
-                    <div class="font-semibold">基础设置</div>
+                    <div class="font-semibold">Team邀请管理</div>
                     <div class="text-xs text-slate-500 mt-0.5">Basic Settings</div>
                     <span
                         class="pointer-events-none absolute inset-0 rounded-xl ring-0 group-hover:ring-2 group-hover:ring-indigo-400/60"></span>
@@ -27,7 +27,7 @@
                 <button @click="go('token')"
                     class="group relative rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.99]">
                     <div class="text-3xl mb-2 select-none">📦</div>
-                    <div class="font-semibold">订单管理</div>
+                    <div class="font-semibold">Plus订阅管理</div>
                     <div class="text-xs text-slate-500 mt-0.5">Order Management</div>
                     <span
                         class="pointer-events-none absolute inset-0 rounded-xl ring-0 group-hover:ring-2 group-hover:ring-indigo-400/60"></span>
@@ -37,7 +37,7 @@
                 <button @click="go('Team')"
                     class="group relative rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.99]">
                     <div class="text-3xl mb-2 select-none">📝</div>
-                    <div class="font-semibold">提交订单</div>
+                    <div class="font-semibold">Team帐号管理</div>
                     <div class="text-xs text-slate-500 mt-0.5">Submit Order</div>
                     <span
                         class="pointer-events-none absolute inset-0 rounded-xl ring-0 group-hover:ring-2 group-hover:ring-indigo-400/60"></span>
@@ -61,7 +61,7 @@ onMounted(() => {
 
 
 function go(act) {
-    if(act==='settings') return Tabtoutr.push({ name: 'settings' })
+    if(act==='TeamOrder') return Tabtoutr.push({ name: 'TeamOrder' })
     if(act==='card') return Tabtoutr.push({ name: 'card' })
     if(act==='token') return Tabtoutr.push({ name: 'token' })
     if(act==='Team') return Tabtoutr.push({ name: 'Team' })

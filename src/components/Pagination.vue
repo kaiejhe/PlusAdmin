@@ -1,3 +1,4 @@
+<!--分页-->
 <template>
   <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 dark:border-white/10 dark:bg-transparent">
     <!-- 移动端：上一页/下一页（演示，用 button 更合适） -->

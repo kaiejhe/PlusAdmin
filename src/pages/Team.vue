@@ -44,9 +44,9 @@ const Cardlist = ref([])
 const log = ref(true)
 const TextArea = ref('')
 const categories = [
-  { key: 'o1', label: '等待邀请' },
-  { key: 'o2',    label: '邀请完成' },
-  { key: 'o3',  label: '邀请失败' },
+  { key: 'o1', label: '待用团队' },
+  { key: 'o2',    label: '满员团队' },
+  { key: 'o3',  label: '禁用团队' },
   { key: 'all',  label: '添加团队' }
 ]
 
