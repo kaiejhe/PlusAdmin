@@ -304,10 +304,40 @@ export async function TeamEmail(request, env){
     body: DataJson
   });
   const result = await res.json();
-  if(res.ok){
-    return json({ ok: true, msg: "处理成功",result:result,}, 200); 
+  if(res.ok && result.status==='success'){
+    try {
+      const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+      const stmts = [
+        db.prepare("BEGIN"),
+        // 1) 更新 card 状态
+        db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
+          .bind("o2", Card, "Team"),
+        // 2) 库存 -1（带保护，避免负数）
+        db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
+          .bind(TeamRES.id),
+        // 3) 记录订单
+        db.prepare("INSERT INTO teamorder (usEmail, accEmail, Time, State, created_at) VALUES (?, ?, ?, ?, ?)")
+          .bind(Email, TeamRES.accEmail, TeamRES.Time, "o2", chinaTime),
+        // 提交事务
+        db.prepare("COMMIT")
+      ]
+      
+      const results = await db.batch(stmts);
+      const r1 = results[1], r2 = results[2], r3 = results[3];
+      const ok1 = r1?.success && r1?.meta?.changes === 1;
+      const ok2 = r2?.success && r2?.meta?.changes === 1;
+      const ok3 = r3?.success && r3?.meta?.changes === 1;
+      if (ok1 && ok2 && ok3) {
+        return json({ ok: true, msg: "已成功发送邀请,请留意邮件",result:result,}, 200); 
+      }
+      await db.batch([db.prepare("ROLLBACK")]);
+      await db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?").bind("o3", Card, "Team");
+      return json({ ok: false, msg: "非法请求,兑换码已冻结",result:result,}, 200); 
+    } catch (error) {
+      return json({ ok: false, msg: "服务器异常,请重试或联系客服处理",result:result,}, 200); 
+    }
   }else{
-    return json({ ok: true, msg: "处理失败",result:result,}, 200); 
+    return json({ ok: false, msg: "团队邀请失败,请重试或联系客服处理",result:result,}, 200); 
   }
   
 }
