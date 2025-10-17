@@ -22,7 +22,8 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'getlist'  && request.method === 'POST') return getlist(data, env)
     if (msgoogle === 'foradd'  && request.method === 'POST') return foradd(data, env)
     if (msgoogle === 'AdminToken'  && request.method === 'POST') return AdminToken(data, env)
-      if (msgoogle === 'Card'  && request.method === 'POST') return Card(data, env)
+    if (msgoogle === 'Card'  && request.method === 'POST') return Card(data, env)
+    if (msgoogle === 'TeamEmail'  && request.method === 'POST') return TeamEmail(data, env)
     return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
@@ -264,7 +265,22 @@ export async function Card(request, env){
   return json({ ok: false, msg: "当前页面不存在",tM:CardRes }, 200); 
 }
 
-
+//Team 提交订单并且邀请
+export async function TeamEmail(request, env){
+  const db = env.TokenD1;
+  const { Card,Email } = request;
+  const CardRes = await db.prepare("SELECT cardtext, type ,state , CardTime FROM  card WHERE cardtext = ? AND type = ?")
+  .bind(Card, "Team").first();
+  if(!CardRes) return json({ ok: false, msg: "兑换码不存在" }, 200);
+  if(CardRes.state!='o1'){
+    if(CardRes.state=='o2') return json({ ok: false, msg: "兑换码已使用!" }, 200);
+    if(CardRes.state=='o3') return json({ ok: false, msg: "兑换码已失效!" }, 200);
+    return json({ ok: false, msg: "当前页面不存在",tM:CardRes }, 200); 
+  }
+  const TeamRES = await db.prepare(`
+  SELECT * FROM teamtoken WHERE State = ? AND Time = ? AND usNum > 0 `).bind("o1", CardRes.CardTime).first();
+  if(!TeamRES) return json({ ok: false, msg: "库存不足,请联系客服添加库存!" }, 200);
+}
 
 
 
