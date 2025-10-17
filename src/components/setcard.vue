@@ -110,9 +110,8 @@ const Submit = async () => {
     const res = await PostApi(JSON.stringify({
         msgoogle:"foradd",
         data:{
-            CardList:SetNum.value,
+            CardList:CardList.value,
             type:CardType.value,
-            CardTxt:CardTxt.value,
             CardTime:CardTime.value
         }
     }))
