@@ -129,7 +129,7 @@ async function getlist(request,env) {
 //批量添加方法
 async function foradd(request,env) {
     const db = env.TokenD1;
-    const {CardList = [],type,CardTime} = request;
+    const {CardList = [],type,CardTime=null} = await request.json();
     if(CardList.length < 1 ) return json({ ok: false, msg: "当前页面不存在1" }, 404);
     const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
     const Tssss = CardList.map((index) => {
@@ -142,7 +142,7 @@ async function foradd(request,env) {
        };
     });
     try {
-        const statements = Tssss.map((item) => db.prepare("INSERT INTO card (cardtext, state, created_at,type,CardTime) VALUES (?, ?, ?,?,?)" ).bind(item.cardtext,item.state,item.created_at,item.type,item.CardTime ));
+        const statements = Tssss.map((item) => db.prepare("INSERT INTO card (cardtext, state, created_at,type,CardTime) VALUES (?, ?, ?,?,?)" ).bind(item.CardList,item.state,item.created_at,item.type,item.CardTime ));
         await db.batch(statements);
         return json({ ok: true, msg: "添加成功" }, 200);
     } catch (error) {
