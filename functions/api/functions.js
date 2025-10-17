@@ -22,6 +22,7 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'getlist'  && request.method === 'POST') return getlist(data, env)
     if (msgoogle === 'foradd'  && request.method === 'POST') return foradd(data, env)
     if (msgoogle === 'AdminToken'  && request.method === 'POST') return AdminToken(data, env)
+      if (msgoogle === 'Teamadd'  && request.method === 'POST') return Teamadd(data, env)
     return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
@@ -250,7 +251,18 @@ export async function AdminToken(request, env){
 }
 
 
-
+//Team验证激活码是否存在
+export async function Teamadd(request, env){
+  const db = env.TokenD1;
+  const { Card, Email } = request;
+  const CardRes = await db.prepare("SELECT cardtext, type FROM card WHERE cardtext = ? AND type = ?")
+  .bind(Card, "Team").first();
+  if(!CardRes) return json({ ok: false, msg: "兑换码不存在" }, 500);
+  if(CardRes.state==='o1') return json({ ok: true, msg: "兑换码验证成功" }, 200);
+  if(CardRes.state==='o2') return json({ ok: false, msg: "兑换码已使用!" }, 200);
+  if(CardRes.state==='o3') return json({ ok: false, msg: "兑换码已失效!" }, 200);
+  return json({ ok: false, msg: "当前页面不存在" }, 200); 
+}
 
 
 

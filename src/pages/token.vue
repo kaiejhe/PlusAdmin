@@ -128,7 +128,6 @@ const SetPostApi = async()=>{
 }
 //修改状态
 const Upitem = async(item)=>{
-    console.log("----", item)
     logName.value = "正在修改"
     log.value = true
     const JSONDATA = JSON.stringify({
@@ -136,7 +135,7 @@ const Upitem = async(item)=>{
         data: {
             table: "plusorder",
             id: item.id,
-            updates: { State: TabNameLs[Tabinde.value].key }
+            updates: { State: item.State }
         }
     })
     const res = await PostApi(JSONDATA)
