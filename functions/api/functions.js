@@ -279,7 +279,7 @@ export async function TeamEmail(request, env){
   }
   const TeamRES = await db.prepare(`
   SELECT * FROM teamtoken WHERE State = ? AND Time = ? AND usNum > 0 `).bind("o1", CardRes.CardTime).first();
-  if(!TeamRES) return json({ ok: false, msg: "库存不足1,请联系客服添加库存!",TeamRES:TeamRES,SS:CardRes.CardTime }, 200);
+  if(!TeamRES) return json({ ok: false, msg: "库存不足,请联系客服添加库存!",TeamRES:TeamRES,SS:CardRes.CardTime }, 200);
   let DataJson
   if(CardRes.CardTime==30){
     DataJson = JSON.stringify({
@@ -303,7 +303,13 @@ export async function TeamEmail(request, env){
     },
     body: DataJson
   });
-  return json({ ok: false, msg: "验证成功1",TeamRES:res,oo:TeamRES.AccToken,useRoute:TeamRES.TeamID,KS:Email}, 200); 
+  const result = await res.json();
+  if(res.ok){
+    return json({ ok: true, msg: "处理成功",result:result,}, 200); 
+  }else{
+    return json({ ok: true, msg: "处理失败",result:result,}, 200); 
+  }
+  
 }
 
 
