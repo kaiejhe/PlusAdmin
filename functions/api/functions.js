@@ -261,7 +261,7 @@ export async function Card(request, env){
   if(CardRes.State=='o1') return json({ ok: true, msg: "兑换码验证成功",Time:CardRes.CardTime }, 200);
   if(CardRes.State=='o2') return json({ ok: false, msg: "兑换码已使用!" }, 200);
   if(CardRes.State=='o3') return json({ ok: false, msg: "兑换码已失效!" }, 200);
-  return json({ ok: false, msg: "当前页面不存在" }, 200); 
+  return json({ ok: false, msg: "当前页面不存在",tM:CardRes }, 200); 
 }
 
 
