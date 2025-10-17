@@ -279,7 +279,7 @@ export async function TeamEmail(request, env){
   }
   const TeamRES = await db.prepare(`
   SELECT * FROM teamtoken WHERE State = ? AND Time = ? AND usNum > 0 `).bind("o1", CardRes.CardTime).first();
-  if(!TeamRES) return json({ ok: false, msg: "库存不足,请联系客服添加库存!",TeamRES:TeamRES }, 200);
+  if(!TeamRES) return json({ ok: false, msg: "库存不足,请联系客服添加库存!",TeamRES:TeamRES,SS:CardRes.CardTime }, 200);
 }
 
 
