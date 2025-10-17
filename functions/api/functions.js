@@ -291,7 +291,7 @@ export async function TeamEmail(request, env){
       Accid:TeamRES.TeamID
     })
   });
-  return json({ ok: false, msg: "验证成功",TeamRES:res}, 200); 
+  return json({ ok: false, msg: "验证成功1",TeamRES:res}, 200); 
 }
 
 
