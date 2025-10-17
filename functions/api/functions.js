@@ -286,7 +286,7 @@ export async function TeamEmail(request, env){
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      Email: Email,
+      Email: [Email],
       Token: TeamRES.AccToken,
       Accid:TeamRES.TeamID
     })
