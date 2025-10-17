@@ -280,16 +280,28 @@ export async function TeamEmail(request, env){
   const TeamRES = await db.prepare(`
   SELECT * FROM teamtoken WHERE State = ? AND Time = ? AND usNum > 0 `).bind("o1", CardRes.CardTime).first();
   if(!TeamRES) return json({ ok: false, msg: "库存不足1,请联系客服添加库存!",TeamRES:TeamRES,SS:CardRes.CardTime }, 200);
+  let DataJson
+  if(CardRes.CardTime==30){
+    DataJson = JSON.stringify({
+      Email: [Email],
+      Token: TeamRES.AccToken,
+      Accid:TeamRES.TeamID,
+      role:"standard-user"
+  })
+  }else{
+    DataJson = JSON.stringify({
+      Email: [Email],
+      Token: TeamRES.AccToken,
+      Accid:TeamRES.TeamID,
+      role:"standard-user"
+  })
+  }
   const res = await fetch('http://pyapi.my91.my/TeamAdd', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      Email: [Email],
-      Token: TeamRES.AccToken,
-      Accid:TeamRES.TeamID
-    })
+    body: DataJson
   });
   return json({ ok: false, msg: "验证成功1",TeamRES:res,oo:TeamRES.AccToken,useRoute:TeamRES.TeamID,KS:Email}, 200); 
 }
