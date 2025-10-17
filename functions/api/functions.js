@@ -255,12 +255,12 @@ export async function AdminToken(request, env){
 export async function Card(request, env){
   const db = env.TokenD1;
   const { Card } = request;
-  const CardRes = await db.prepare("SELECT cardtext, type FROM card WHERE cardtext = ? AND type = ?")
+  const CardRes = await db.prepare("SELECT cardtext, type FROM state CardTime card WHERE cardtext = ? AND type = ?")
   .bind(Card, "Team").first();
   if(!CardRes) return json({ ok: false, msg: "兑换码不存在" }, 200);
-  if(CardRes.State=='o1') return json({ ok: true, msg: "兑换码验证成功",Time:CardRes.CardTime }, 200);
-  if(CardRes.State=='o2') return json({ ok: false, msg: "兑换码已使用!" }, 200);
-  if(CardRes.State=='o3') return json({ ok: false, msg: "兑换码已失效!" }, 200);
+  if(CardRes.state=='o1') return json({ ok: true, msg: "兑换码验证成功",Time:CardRes.CardTime }, 200);
+  if(CardRes.state=='o2') return json({ ok: false, msg: "兑换码已使用!" }, 200);
+  if(CardRes.state=='o3') return json({ ok: false, msg: "兑换码已失效!" }, 200);
   return json({ ok: false, msg: "当前页面不存在",tM:CardRes }, 200); 
 }
 
