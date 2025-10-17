@@ -269,7 +269,7 @@ export async function Card(request, env){
 export async function TeamEmail(request, env){
   const db = env.TokenD1;
   const { Card,Email } = request;
-  const CardRes = await db.prepare("SELECT cardtext, type ,state , CardTime FROM  card WHERE cardtext = ? AND type = ?")
+  const CardRes = await db.prepare("SELECT * FROM  card WHERE cardtext = ? AND type = ?")
   .bind(Card, "Team").first();
   if(!CardRes) return json({ ok: false, msg: "兑换码不存在" }, 200);
   if(CardRes.state!='o1'){
@@ -280,6 +280,7 @@ export async function TeamEmail(request, env){
   const TeamRES = await db.prepare(`
   SELECT * FROM teamtoken WHERE State = ? AND Time = ? AND usNum > 0 `).bind("o1", CardRes.CardTime).first();
   if(!TeamRES) return json({ ok: false, msg: "库存不足1,请联系客服添加库存!",TeamRES:TeamRES,SS:CardRes.CardTime }, 200);
+  return json({ ok: false, msg: "验证成功",TeamRES:TeamRES}, 200);
 }
 
 
