@@ -255,7 +255,7 @@ export async function AdminToken(request, env){
 export async function Card(request, env){
   const db = env.TokenD1;
   const { Card } = request;
-  const CardRes = await db.prepare("SELECT cardtext, type FROM state CardTime card WHERE cardtext = ? AND type = ?")
+  const CardRes = await db.prepare("SELECT cardtext, type ,state , CardTime FROM  card WHERE cardtext = ? AND type = ?")
   .bind(Card, "Team").first();
   if(!CardRes) return json({ ok: false, msg: "兑换码不存在" }, 200);
   if(CardRes.state=='o1') return json({ ok: true, msg: "兑换码验证成功",Time:CardRes.CardTime }, 200);
