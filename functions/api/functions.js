@@ -37,7 +37,7 @@ async function addlist(request,env) {
     const placeholders = validKeys.map(() => "?").join(", ");
     const sql = `INSERT INTO ${table} (${validKeys.join(", ")}) VALUES (${placeholders})`;
     try {
-        const res = await env.PageToken.prepare(sql).bind(...validValues).run();
+        const res = await db.prepare(sql).bind(...validValues).run();
         return json({ ok: true, msg: "新增成功", id: res.meta.last_row_id }, 201);
     } catch (error) {
         return json({ ok: false, msg: "添加数据失败", error: String(error) }, 500);
