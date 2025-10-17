@@ -34,7 +34,7 @@
                 </button>
 
                 <!-- 提交订单 -->
-                <button @click="go('submit')"
+                <button @click="go('Team')"
                     class="group relative rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.99]">
                     <div class="text-3xl mb-2 select-none">📝</div>
                     <div class="font-semibold">提交订单</div>
@@ -64,7 +64,7 @@ function go(act) {
     if(act==='settings') return Tabtoutr.push({ name: 'settings' })
     if(act==='card') return Tabtoutr.push({ name: 'card' })
     if(act==='token') return Tabtoutr.push({ name: 'token' })
-    if(act==='submit') return Tabtoutr.push({ name: 'submit' })
+    if(act==='Team') return Tabtoutr.push({ name: 'Team' })
     
 }
     

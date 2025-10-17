@@ -7,13 +7,19 @@
                         <thead>
                             <tr>
                                 <th scope="col"
-                                    class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-0">订阅卡密
+                                    class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-0">邮箱
                                 </th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">当前状态
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">团队
                                 </th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">卡密类型
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">密钥
                                 </th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">创建时间
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">售后
+                                </th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">坑位
+                                </th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">状态
+                                </th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">时间
                                 </th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">操作
                                 </th>
@@ -22,29 +28,32 @@
                         <tbody class="divide-y divide-gray-200">
                             <tr v-for="(item,index) in CardList" :key="index">
                                 <td class="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0">
-                                    {{ item.cardtext }}</td>
+                                    {{ item.Email }}</td>
+                                <td class="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0">
+                                    {{ item.TeamID }}</td>
+                                <td class="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0">
+                                    {{ item.AccToken }}</td>
+                                <td class="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0">
+                                    {{ item.Time }}</td>    
+                                <td class="py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0">
+                                    {{ item.usNum }}</td>
                                 <td class="px-3 py-4 text-sm whitespace-nowrap text-gray-500">
                                     <div class="mt-2 grid">
-                                        <select id="country" @change="Getselect(item)" v-model="item.state" name="country"
+                                        <select id="country" @change="Getselect(item)" v-model="item.State" name="country"
                                             autocomplete="country-name"
                                             class="col-start-1 row-start-1 w-auto appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
-                                            <option value="o1">待使用</option>
-                                            <option value="o2">已使用</option>
-                                            <option value="o3">已废弃</option>
+                                            <option value="o1">正常</option>
+                                            <option value="o2">禁用</option>
                                         </select>
                                         <ChevronDownIcon
                                             class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"
                                             aria-hidden="true" />
                                     </div>
                                 </td>
-                                <td class="px-3 py-4 whitespace-nowrap text-gray-500">
-                                   <span>{{ item.type }}</span>
-                                   <span v-if="item.type=='Team'"> | {{ item.CardTime }}</span>
-                                </td>
                                 <td class="px-3 py-4 text-xs whitespace-nowrap text-gray-500">
                                     <div class="grid gap-1">
                                         <span class="">{{GetTime(item.created_at)}}</span>
-                                        <span class="" v-if="item.usaeged_at">{{GetTime(item.usaeged_at)  }}</span>
+                                        <span class="">2028-08-07 19:36:19</span>
                                     </div>
                                 </td>
                                 <td class="py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">

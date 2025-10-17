@@ -5,7 +5,7 @@ import home from '../pages/home.vue'
 import settings from '../pages/settings.vue'
 import card from '../pages/card.vue'
 import token from '../pages/token.vue'
-import submit from '../pages/submit.vue'
+import Team from '../pages/Team.vue'
 
 
 const routes = [
@@ -14,7 +14,7 @@ const routes = [
   { path: '/settings', name: 'settings',component:settings},
   { path: '/card', name: 'card',component:card},
   { path: '/token', name: 'token',component:token},
-  { path: '/submit', name: 'submit',component:submit},
+  { path: '/Team', name: 'Team',component:Team},
 ]
 
 const router = createRouter({
