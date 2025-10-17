@@ -142,7 +142,7 @@ async function foradd(request,env) {
        };
     });
     try {
-        const statements = Tssss.map((item) => db.prepare("INSERT INTO card (cardtext, state, created_at,type,CardTime) VALUES (?, ?, ?)" ).bind(item.cardtext,item.state,item.created_at,item.type,item.CardTime ));
+        const statements = Tssss.map((item) => db.prepare("INSERT INTO card (cardtext, state, created_at,type,CardTime) VALUES (?, ?, ?,?,?)" ).bind(item.cardtext,item.state,item.created_at,item.type,item.CardTime ));
         await db.batch(statements);
         return json({ ok: true, msg: "添加成功" }, 200);
     } catch (error) {
