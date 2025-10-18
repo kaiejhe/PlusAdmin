@@ -299,7 +299,7 @@ export async function TeamEmail(request, db){
       const result = await res.json();
       if (result.status === "success") {
         await db
-          .prepare("UPDATE teamorder SET state = ? WHERE Kami = ?")
+          .prepare("UPDATE teamorder SET state = ? WHERE CardTxt = ?")
           .bind("o2", Card)
           .run();
         return json({ ok: true, msg: "成功发送团队邀请", JSON: result }, 200);
