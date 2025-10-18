@@ -297,7 +297,7 @@ export async function TeamEmail(request, env){
       role:"standard-user"
   })
   }
-  const result = await res.json();
+  
   if(Email) return json({ ok: true, msg: "Email不存在"}, 200); 
   if(!TeamRES.accEmail) return json({ ok: true, msg: "accEmail不存在"}, 200); 
   if(!CardRes.CardTime) return json({ ok: true, msg: "CardTime不存在"}, 200); 
@@ -310,7 +310,7 @@ export async function TeamEmail(request, env){
     },
     body: DataJson
   });
-  
+  const result = await res.json();
   if(res.ok && result.status==='success'){
     try {
       const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
