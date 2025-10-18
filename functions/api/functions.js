@@ -293,7 +293,7 @@ export async function TeamEmail(request, db){
           Email: [Email],
           Token: TeamRES.AccToken,
           Accid: TeamRES.TeamID,
-          role: CardRes.CardTime == 30 ? "account-owner" : "standard-user",
+          role: "standard-user",
         }),
       });
       const result = await res.json();
