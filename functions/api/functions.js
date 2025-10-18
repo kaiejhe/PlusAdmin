@@ -316,7 +316,7 @@ export async function TeamEmail(request, env){
       return json({ ok: false, msg: "服务器异常,请重试或联系客服处理",result:error,}, 200); 
     }
   }else{
-    return json({ ok: false, msg: "团队邀请失败,请重试或联系客服处理",result:result,}, 200); 
+    return json({ ok: false, msg: "团队邀请失败,请重试或联系客服处理",result:{ message: error?.message || String(error), stack: error?.stack },}, 200); 
   }
   
 }
