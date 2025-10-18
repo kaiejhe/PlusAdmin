@@ -273,37 +273,16 @@ export async function TeamEmail(request, db){
   const TeamRES = await db.prepare(`
   SELECT * FROM teamtoken WHERE State = ? AND Time = ? AND usNum > 0 `).bind("o1", CardRes.CardTime).first();
   if(!TeamRES) return json({ ok: false, msg: "库存不足,请联系客服添加库存!",TeamRES:TeamRES,SS:CardRes.CardTime }, 200);
-  try {
-    const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
-    // 1) 开启事务
-    await db.exec("BEGIN IMMEDIATE");
-    const R1 = await db
-      .prepare(
-        "UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o1'"
-      )
-      .bind("o2", Card, "Team")
-      .run();
-    const R2 = await db
-      .prepare(
-        "UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0"
-      )
-      .bind(TeamRES.id)
-      .run();
-    const R3 = await db
-      .prepare(
-        `INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at,CardTxt) VALUES (?, ?, ?, ?, ?,?)`
-      )
+  
+  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+  const stmts = [
+    db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o1'").bind("o2", Card, "Team"),
+    db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0").bind(TeamRES.id),
+    db.prepare( `INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at,CardTxt) VALUES (?, ?, ?, ?, ?,?)`)
       .bind(Email, TeamRES.Email, CardRes.CardTime, "o1", chinaTime, Card)
-      .run();
-
-    
-    
-    // 判断更新 card
-    if (R1.meta?.changes === 0) throw new Error("卡片不存在或状态不是 o1");
-    if (R2.meta?.changes === 0) throw new Error("团队库存不足");
-    
-    await db.exec("COMMIT");
-
+  ]
+  try {
+    const ResTm = await db.batch(stmts);
     AddTeam({
       userEmail:Email,          //用户的邮箱
       TeamAppid:TeamRES.id,     //绑定的母号ID
@@ -314,8 +293,7 @@ export async function TeamEmail(request, db){
     },db)
     return json({ ok: true, msg: "Team邀请请求已成功提交" }, 200);
   } catch (error) {
-    try { await db.exec("ROLLBACK"); } catch {}
-    return json({ ok: false, msg: "提交失败,请重试,若依然无法提交请联系客服!",error:String(error)}, 200);
+    return json({ ok: false, msg: "提交失败,自动回滚!",error:String(error)}, 200);
   }
 }
 
