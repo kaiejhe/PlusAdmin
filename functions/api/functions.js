@@ -304,7 +304,7 @@ export async function TeamEmail(request, env){
     body: DataJson
   });
   const result = await res.json();
-  if(!Email) return json({ ok: true, msg: "Email不存在"}, 200); 
+  if(!request.Email) return json({ ok: true, msg: "Email不存在"}, 200); 
   if(!TeamRES.accEmail) return json({ ok: true, msg: "Email不存在"}, 200); 
   if(!CardRes.CardTime) return json({ ok: true, msg: "Email不存在"}, 200); 
   if(!chinaTime) return json({ ok: true, msg: "Email不存在"}, 200); 
