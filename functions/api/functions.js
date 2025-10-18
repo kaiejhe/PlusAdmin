@@ -274,67 +274,70 @@ export async function TeamEmail(request, db){
   SELECT * FROM teamtoken WHERE State = ? AND Time = ? AND usNum > 0 `).bind("o1", CardRes.CardTime).first();
   if(!TeamRES) return json({ ok: false, msg: "库存不足,请联系客服添加库存!",TeamRES:TeamRES,SS:CardRes.CardTime }, 200);
   try {
+    const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+    // 1) 开启事务
+    await db.exec("BEGIN");
     const stmts = [
-      db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
-        .bind("o3", Card, "Team"),
+      db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o1'")
+        .bind("o2", Card, "Team"),
       db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
-        .bind(TeamRES.id)
+        .bind(TeamRES.id),
+      db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at,CardTxt) VALUES (?, ?, ?, ?, ?,?)`)
+        .bind(Email, TeamRES.Email, CardRes.CardTime, "o1", chinaTime,Card)
     ]
     const HUIGUN = await db.batch(stmts);
-     AddTeam({
-    Card:Card,                //兑换码
-    usEmail: Email,         //用户邮箱
-    acEmail:TeamRES.Email,    //团队邮箱
-    Token: TeamRES.AccToken,  //团队密钥
-    Accid:TeamRES.TeamID,     //团队编号
-    usEmid:TeamRES.id,        //团队帐号ID
-    role:CardRes.CardTime     //赋予权限  == 30? 'account-owner' : 'standard-user'
-  },db)
+    // 判断更新 card
+    if (!HUIGUN[0].success || HUIGUN[0].meta.changes === 0)
+      throw new Error("卡片不存在或类型不匹配");
+
+    // 判断更新 teamtoken
+    if (!HUIGUN[1].success || HUIGUN[1].meta.changes === 0)
+      throw new Error("团队库存不足或已用尽");
+    
+    AddTeam({
+      userEmail:Email,          //用户的邮箱
+      TeamAppid:TeamRES.id,     //绑定的母号ID
+      AccToken:TeamRES.AccToken,//母号密钥
+      TeamuserID:TeamRES.TeamID,//团队id编号
+      Kami:Card,                //卡密信息
+      TeamType:TeamRES.Time == 30 ? "account-owner" : "standard-user"     //邀请的时候预设管理员
+    },db)
     return json({ ok: true, msg: "Team邀请请求已成功提交", HUIGUN }, 200);
   } catch (error) {
-    return json({ ok: false, msg: "Team 邀请请求发送失败", error: String(error) }, 500);
+    await db.exec("ROLLBACK").catch(() => {});
+    return json({ ok: false, msg: "提交失败,请重试,若依然无法提交请联系客服!"}, 200);
   }
 }
 
 //发送团队邀请记录
-export async function AddTeam(Tm,db){
-  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+export async function AddTeam(Shang,env){
   try {
-    const res = await fetch('http://pyapi.my91.my/TeamAdd', {
-      method: 'POST',
+    const res = await fetch("http://pyapi.my91.my/TeamAdd", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        Email: [Tm.usEmail],
-        Token: Tm.AccToken,
-        Accid:Tm.TeamID,
-        role:Tm.role == 30? 'account-owner' : 'standard-user'
-  })
+        Email: [Shang.userEmail],
+        Token: Shang.AccToken,
+        Accid: Shang.TeamuserID,
+        role: Shang.TeamType,
+      }),
     });
     const result = await res.json();
-    if(result.status==='success'){
-      await db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
-          .bind("o2", Tm.Card, "Team").run()
-      await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
-        .bind(Tm.usEmail, Tm.acEmail, Tm.role, "o2", chinaTime).run()
-    }else{
-      await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
-        .bind(Tm.usEmail, Tm.acEmail, Tm.role, "o3", chinaTime).run()
+    if (result.status==='success') {
+      await db.prepare("UPDATE teamorder SET state = ? WHERE Kami = ?")
+        .bind("o2", Shang.Card).run()
+      return json({ ok: true, msg: "邀请成功!",JSON:result}, 200);
     }
   } catch (error) {
-    try {
-      const stmts = [
-        db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
-          .bind("o1", Tm.Card, "Team"),
-        db.prepare("UPDATE teamtoken SET usNum = usNum + 1 WHERE id = ?")
-          .bind(Tm.id),
-        db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
-          .bind(Tm.usEmail, Tm.acEmail, Tm.role, "o3", chinaTime)
-      ]
-        await db.batch(stmts);
-    } catch (error) {
-      console.log("----出错啦----")
-    }
+    console.log("邀请出错啦")
   }
+  await  db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o1'")
+          .bind("o1", Shang.Card, "Team").run();
+  await  db.prepare("UPDATE teamtoken SET usNum = usNum + 1 WHERE TeamID = ?")
+          .bind(Shang.TeamuserID).run();
+  await  db.prepare("UPDATE teamorder SET State = ? WHERE CardTxt = ? ")
+          .bind("o3", Shang.Card).run();
+  return json({ ok: false, msg: "发送邀请请求失败!"}, 200);
 }
