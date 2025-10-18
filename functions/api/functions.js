@@ -283,49 +283,47 @@ export async function TeamEmail(request, db){
   ]
   try {
     const ResTm = await db.batch(stmts);
-    AddTeam({
-      userEmail:Email,          //用户的邮箱
-      TeamAppid:TeamRES.id,     //绑定的母号ID
-      AccToken:TeamRES.AccToken,//母号密钥
-      TeamuserID:TeamRES.TeamID,//团队id编号
-      Kami:Card,                //卡密信息
-      TeamType:TeamRES.Time == 30 ? "account-owner" : "standard-user"     //邀请的时候预设管理员
-    },db)
-    return json({ ok: true, msg: "Team邀请请求已成功提交" }, 200);
+    try {
+      const res = await fetch("http://pyapi.my91.my/TeamAdd", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          Email: [Email],
+          Token: TeamRES.AccToken,
+          Accid: TeamRES.TeamuserID,
+          role: CardRes.CardTime == 30 ? "account-owner" : "standard-user",
+        }),
+      });
+      const result = await res.json();
+      if (result.status === "success") {
+        await db
+          .prepare("UPDATE teamorder SET state = ? WHERE Kami = ?")
+          .bind("o2", Card)
+          .run();
+        return json({ ok: true, msg: "成功发送团队邀请", JSON: result }, 200);
+      }
+    } catch (error) {
+        console.log("--执行出问题拉--")
+    }
+    await db
+      .prepare(
+        "UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o1'"
+      )
+      .bind("o1", Card, "Team")
+      .run();
+    await db
+      .prepare("UPDATE teamtoken SET usNum = usNum + 1 WHERE id = ?")
+      .bind(TeamRES.id)
+      .run();
+    await db
+      .prepare("UPDATE teamorder SET State = ? WHERE CardTxt = ? ")
+      .bind("o3", Card)
+      .run();
+    return json({ ok: false, msg: "发送邀请请求失败!" }, 200);
   } catch (error) {
     return json({ ok: false, msg: "提交失败,自动回滚!",error:String(error)}, 200);
   }
 }
 
-//发送团队邀请记录
-export async function AddTeam(Shang,db){
-  try {
-    const res = await fetch("http://pyapi.my91.my/TeamAdd", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        Email: [Shang.userEmail],
-        Token: Shang.AccToken,
-        Accid: Shang.TeamuserID,
-        role: Shang.TeamType,
-      }),
-    });
-    const result = await res.json();
-    if (result.status==='success') {
-      await db.prepare("UPDATE teamorder SET state = ? WHERE Kami = ?")
-        .bind("o2", Shang.Card).run()
-      return json({ ok: true, msg: "邀请成功!",JSON:result}, 200);
-    }
-  } catch (error) {
-    console.log("邀请出错啦")
-  }
-  await  db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o1'")
-          .bind("o1", Shang.Card, "Team").run();
-  await  db.prepare("UPDATE teamtoken SET usNum = usNum + 1 WHERE TeamID = ?")
-          .bind(Shang.TeamuserID).run();
-  await  db.prepare("UPDATE teamorder SET State = ? WHERE CardTxt = ? ")
-          .bind("o3", Shang.Card).run();
-  return json({ ok: false, msg: "发送邀请请求失败!"}, 200);
-}
