@@ -297,12 +297,6 @@ export async function TeamEmail(request, env){
       role:"standard-user"
   })
   }
-  
-  if(!Email) return json({ ok: true, msg: "Email不存在"}, 200); 
-  if(!TeamRES.accEmail) return json({ ok: true, msg: "accEmail不存在",TeamRES}, 200); 
-  if(!CardRes.CardTime) return json({ ok: true, msg: "CardTime不存在"}, 200); 
-  if(!chinaTime) return json({ ok: true, msg: "chinaTime不存在"}, 200); 
-  return json({ ok: true, msg: "正常了"}, 200); 
   const res = await fetch('http://pyapi.my91.my/TeamAdd', {
     method: 'POST',
     headers: {
@@ -318,9 +312,8 @@ export async function TeamEmail(request, env){
           .bind("o2", Card, "Team").run()
       const T2 =  await db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
           .bind(TeamRES.id).run()
-      
       const T3 =  await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
-          .bind(Email, TeamRES.accEmail, CardRes.CardTime, "o2", chinaTime).run()
+          .bind(Email, TeamRES.Email, TeamRES.Time, "o2", chinaTime).run()
   
       return json({ ok: true, msg: "已成功发送邀请,请留意邮件",T1:T1,T2:T2,T3:T3}, 200); 
     } catch (error) {
