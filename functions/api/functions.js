@@ -269,6 +269,7 @@ export async function Card(request, env){
 export async function TeamEmail(request, env){
   const db = env.TokenD1;
   const { Card,Email } = request;
+  if(!Card || !Email) return json({ ok: false, msg: "参数异常!",Card:Card,Email:Email }, 200);
   const CardRes = await db.prepare("SELECT * FROM  card WHERE cardtext = ? AND type = ?")
   .bind(Card, "Team").first();
   if(!CardRes) return json({ ok: false, msg: "兑换码不存在" }, 200);
