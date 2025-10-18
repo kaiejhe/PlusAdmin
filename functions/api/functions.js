@@ -308,7 +308,7 @@ export async function TeamEmail(request, env){
     try {
       const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
       const Tmres = await db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
-          .bind("o2", Card, "Team")
+          .bind("o2", Card, "Team").run()
       
       
       return json({ ok: true, msg: "已成功发送邀请,请留意邮件",result:Tmres,}, 200); 
