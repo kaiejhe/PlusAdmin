@@ -316,10 +316,10 @@ export async function AddTeam(Tm,db){
     const result = await res.json();
     if(result.status==='success'){
       await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
-        .bind(Email, TeamRES.Email, TeamRES.Time, "o2", chinaTime).run()
+        .bind(Tm.usEmail, Tm.acEmail, Tm.role, "o2", chinaTime).run()
     }else{
       await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
-        .bind(Email, TeamRES.Email, TeamRES.Time, "o3", chinaTime).run()
+        .bind(Tm.usEmail, Tm.acEmail, Tm.role, "o3", chinaTime).run()
     }
   } catch (error) {
     try {
