@@ -310,7 +310,7 @@ export async function TeamEmail(request, db){
 }
 
 //发送团队邀请记录
-export async function AddTeam(Shang,env){
+export async function AddTeam(Shang,db){
   try {
     const res = await fetch("http://pyapi.my91.my/TeamAdd", {
       method: "POST",
