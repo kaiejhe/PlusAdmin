@@ -295,11 +295,15 @@ export async function TeamEmail(request, db){
       )
       .bind(Email, TeamRES.Email, CardRes.CardTime, "o1", chinaTime, Card)
       .run();
-    const HUIGUN = await db.batch(stmts);
+
+    
+    
     // 判断更新 card
     if (R1.meta?.changes === 0) throw new Error("卡片不存在或状态不是 o1");
     if (R2.meta?.changes === 0) throw new Error("团队库存不足");
+    
     await db.exec("COMMIT");
+
     AddTeam({
       userEmail:Email,          //用户的邮箱
       TeamAppid:TeamRES.id,     //绑定的母号ID
@@ -308,7 +312,7 @@ export async function TeamEmail(request, db){
       Kami:Card,                //卡密信息
       TeamType:TeamRES.Time == 30 ? "account-owner" : "standard-user"     //邀请的时候预设管理员
     },db)
-    return json({ ok: true, msg: "Team邀请请求已成功提交",HUIGUN:HUIGUN }, 200);
+    return json({ ok: true, msg: "Team邀请请求已成功提交" }, 200);
   } catch (error) {
     try { await db.exec("ROLLBACK"); } catch {}
     return json({ ok: false, msg: "提交失败,请重试,若依然无法提交请联系客服!",error:String(error)}, 200);
