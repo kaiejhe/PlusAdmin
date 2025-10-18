@@ -321,7 +321,8 @@ export async function TeamEmail(request, env){
         // 提交事务
         db.prepare("COMMIT")
       ]
-       return json({ ok: true, msg: "已成功发送邀请,请留意邮件",result:results,}, 200); 
+      const Tmres = await db.batch(stmts);
+      return json({ ok: true, msg: "已成功发送邀请,请留意邮件",result:Tmres,}, 200); 
     } catch (error) {
       return json({ ok: false, msg: "服务器异常,请重试或联系客服处理",result:error,}, 200); 
     }
