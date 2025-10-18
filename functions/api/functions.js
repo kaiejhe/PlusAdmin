@@ -309,7 +309,7 @@ export async function TeamEmail(request, db){
     }
     await db
       .prepare(
-        "UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o1'"
+        "UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o2'"
       )
       .bind("o1", Card, "Team")
       .run();
