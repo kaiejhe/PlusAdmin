@@ -299,22 +299,23 @@ export async function TeamEmail(request, db){
 //发送团队邀请记录
 export async function AddTeam(Tm,db){
   const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
-  const JsonData = JSON.stringify({
-    Email: [Tm.usEmail],
-    Token: Tm.AccToken,
-    Accid:Tm.TeamID,
-    role:Tm.role == 30? 'account-owner' : 'standard-user'
-  })
   try {
     const res = await fetch('http://pyapi.my91.my/TeamAdd', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JsonData
+      body: JSON.stringify({
+        Email: [Tm.usEmail],
+        Token: Tm.AccToken,
+        Accid:Tm.TeamID,
+        role:Tm.role == 30? 'account-owner' : 'standard-user'
+  })
     });
     const result = await res.json();
     if(result.status==='success'){
+      await db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
+          .bind("o2", Tm.Card, "Team").run()
       await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
         .bind(Tm.usEmail, Tm.acEmail, Tm.role, "o2", chinaTime).run()
     }else{
@@ -325,7 +326,7 @@ export async function AddTeam(Tm,db){
     try {
       const stmts = [
         db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
-          .bind("o1", Card, "Team"),
+          .bind("o1", Tm.Card, "Team"),
         db.prepare("UPDATE teamtoken SET usNum = usNum + 1 WHERE id = ?")
           .bind(Tm.id),
         db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
