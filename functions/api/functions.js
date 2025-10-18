@@ -305,18 +305,14 @@ export async function TeamEmail(request, env){
   });
   const result = await res.json();
   if(res.ok && result.status==='success'){
-    
-    return json({ ok: true, msg: "已成功发送邀请,请留意邮件",Email:Email,TeamRES:TeamRES.accEmail,CardRes:CardRes.CardTime,chinaTime:chinaTime}, 200); 
-    try {
-      const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
-      
-      const T3 =  await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
-          .bind(Email, TeamRES.accEmail, CardRes.CardTime, "o2", chinaTime).run()
-  
-      return json({ ok: true, msg: "已成功发送邀请,请留意邮件",T3:T3}, 200); 
-    } catch (error) {
-      return json({ ok: false, msg: "服务器异常,请重试或联系客服处理",result:{ message: error?.message || String(error), stack: error?.stack }}, 200); 
+    const TmData = {
+      Email:Email,
+      TeamRES:TeamRES.accEmail,
+      CardRes:CardRes.CardTime,
+      chinaTime:chinaTime
     }
+    return json({ ok: true, msg: "已成功发送邀请,请留意邮件",T3:TmData}, 200); 
+    
   }else{
     return json({ ok: false, msg: "团队邀请失败,请重试或联系客服处理",result:{ message: error?.message || String(error), stack: error?.stack },}, 200); 
   }
