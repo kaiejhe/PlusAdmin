@@ -282,8 +282,7 @@ export async function TeamEmail(request, db){
         .bind("o2", Card, "Team"),
       db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
         .bind(TeamRES.id),
-      db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at,CardTxt) VALUES (?, ?, ?, ?, ?,?)`)
-        .bind(Email, TeamRES.Email, CardRes.CardTime, "o1", chinaTime,Card)
+      
     ]
     const HUIGUN = await db.batch(stmts);
     // 判断更新 card
