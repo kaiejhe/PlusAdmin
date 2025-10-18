@@ -310,8 +310,8 @@ export async function TeamEmail(request, db){
     },db)
     return json({ ok: true, msg: "Team邀请请求已成功提交",HUIGUN:HUIGUN }, 200);
   } catch (error) {
-    await db.exec("ROLLBACK").catch(() => {});
-    return json({ ok: false, msg: "提交失败,请重试,若依然无法提交请联系客服!",error:error:String(error)}, 200);
+    try { await db.exec("ROLLBACK"); } catch {}
+    return json({ ok: false, msg: "提交失败,请重试,若依然无法提交请联系客服!",error:String(error)}, 200);
   }
 }
 
