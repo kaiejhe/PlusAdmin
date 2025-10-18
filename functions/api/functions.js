@@ -276,23 +276,30 @@ export async function TeamEmail(request, db){
   try {
     const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
     // 1) 开启事务
-    await db.exec("BEGIN");
-    const stmts = [
-      db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o1'")
-        .bind("o2", Card, "Team"),
-      db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
-        .bind(TeamRES.id),
-      
-    ]
+    await db.exec("BEGIN IMMEDIATE");
+    const R1 = await db
+      .prepare(
+        "UPDATE card SET state = ? WHERE cardtext = ? AND type = ? AND state = 'o1'"
+      )
+      .bind("o2", Card, "Team")
+      .run();
+    const R2 = await db
+      .prepare(
+        "UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0"
+      )
+      .bind(TeamRES.id)
+      .run();
+    const R3 = await db
+      .prepare(
+        `INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at,CardTxt) VALUES (?, ?, ?, ?, ?,?)`
+      )
+      .bind(Email, TeamRES.Email, CardRes.CardTime, "o1", chinaTime, Card)
+      .run();
     const HUIGUN = await db.batch(stmts);
     // 判断更新 card
-    if (!HUIGUN[0].success || HUIGUN[0].meta.changes === 0)
-      throw new Error("卡片不存在或类型不匹配");
-
-    // 判断更新 teamtoken
-    if (!HUIGUN[1].success || HUIGUN[1].meta.changes === 0)
-      throw new Error("团队库存不足或已用尽");
-    
+    if (R1.meta?.changes === 0) throw new Error("卡片不存在或状态不是 o1");
+    if (R2.meta?.changes === 0) throw new Error("团队库存不足");
+    await db.exec("COMMIT");
     AddTeam({
       userEmail:Email,          //用户的邮箱
       TeamAppid:TeamRES.id,     //绑定的母号ID
@@ -304,7 +311,7 @@ export async function TeamEmail(request, db){
     return json({ ok: true, msg: "Team邀请请求已成功提交",HUIGUN:HUIGUN }, 200);
   } catch (error) {
     await db.exec("ROLLBACK").catch(() => {});
-    return json({ ok: false, msg: "提交失败,请重试,若依然无法提交请联系客服!",error:error}, 200);
+    return json({ ok: false, msg: "提交失败,请重试,若依然无法提交请联系客服!",error:error:String(error)}, 200);
   }
 }
 
