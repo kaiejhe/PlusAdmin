@@ -304,12 +304,10 @@ export async function TeamEmail(request, env){
     body: DataJson
   });
   const result = await res.json();
-  const TmData = {
-      Email:Email,
-      TeamRES:TeamRES.accEmail,
-      CardRes:CardRes.CardTime,
-      chinaTime:chinaTime
-    }
+  if(!Email) return json({ ok: true, msg: "Email不存在"}, 200); 
+  if(!TeamRES.accEmail) return json({ ok: true, msg: "Email不存在"}, 200); 
+  if(!CardRes.CardTime) return json({ ok: true, msg: "Email不存在"}, 200); 
+  if(!chinaTime) return json({ ok: true, msg: "Email不存在"}, 200); 
   if(res.ok && result.status==='success'){
     try {
       const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
