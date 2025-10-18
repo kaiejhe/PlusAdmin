@@ -297,6 +297,11 @@ export async function TeamEmail(request, env){
       role:"standard-user"
   })
   }
+  const result = await res.json();
+  if(Email) return json({ ok: true, msg: "Email不存在"}, 200); 
+  if(!TeamRES.accEmail) return json({ ok: true, msg: "accEmail不存在"}, 200); 
+  if(!CardRes.CardTime) return json({ ok: true, msg: "CardTime不存在"}, 200); 
+  if(!chinaTime) return json({ ok: true, msg: "chinaTime不存在"}, 200); 
   const res = await fetch('http://pyapi.my91.my/TeamAdd', {
     method: 'POST',
     headers: {
@@ -304,12 +309,25 @@ export async function TeamEmail(request, env){
     },
     body: DataJson
   });
-  const result = await res.json();
-  if(Email) return json({ ok: true, msg: "Email不存在"}, 200); 
-  if(!TeamRES.accEmail) return json({ ok: true, msg: "accEmail不存在"}, 200); 
-  if(!CardRes.CardTime) return json({ ok: true, msg: "CardTime不存在"}, 200); 
-  if(!chinaTime) return json({ ok: true, msg: "chinaTime不存在"}, 200); 
   
+  if(res.ok && result.status==='success'){
+    try {
+      const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+      const T1 =  await db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
+          .bind("o2", Card, "Team").run()
+      const T2 =  await db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
+          .bind(TeamRES.id).run()
+      
+      const T3 =  await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
+          .bind(Email, TeamRES.accEmail, CardRes.CardTime, "o2", chinaTime).run()
+  
+      return json({ ok: true, msg: "已成功发送邀请,请留意邮件",T1:T1,T2:T2,T3:T3}, 200); 
+    } catch (error) {
+      return json({ ok: false, msg: "服务器异常,请重试或联系客服处理",result:TmData,}, 200); 
+    }
+  }else{
+    return json({ ok: false, msg: "团队邀请失败,请重试或联系客服处理",result:result,}, 200); 
+  }
   
 }
 
