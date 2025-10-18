@@ -307,21 +307,10 @@ export async function TeamEmail(request, env){
   if(res.ok && result.status==='success'){
     try {
       const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
-      const stmts = [
-        db.prepare("BEGIN"),
-        // 1) 更新 card 状态
-        db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
-          .bind("o2", Card, "Team"),
-        // 2) 库存 -1（带保护，避免负数）
-        db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
-          .bind(TeamRES.id),
-        // 3) 记录订单
-        db.prepare("INSERT INTO teamorder (usEmail, accEmail, Time, State, created_at) VALUES (?, ?, ?, ?, ?)")
-          .bind(Email, TeamRES.accEmail, TeamRES.Time, "o2", chinaTime),
-        // 提交事务
-        db.prepare("COMMIT")
-      ]
-      const Tmres = await db.batch(stmts);
+      const Tmres = await db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
+          .bind("o2", Card, "Team")
+      
+      
       return json({ ok: true, msg: "已成功发送邀请,请留意邮件",result:Tmres,}, 200); 
     } catch (error) {
       return json({ ok: false, msg: "服务器异常,请重试或联系客服处理",result:error,}, 200); 
