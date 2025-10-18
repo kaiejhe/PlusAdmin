@@ -306,9 +306,9 @@ export async function TeamEmail(request, env){
   const result = await res.json();
   if(res.ok && result.status==='success'){
     try {
-      const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+      const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
       
-      const T3 =  await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
+      const T3 =  await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, "State", created_at) VALUES (?, ?, ?, ?, ?)`)
           .bind(Email, TeamRES.accEmail, CardRes.CardTime, "o2", chinaTime).run()
   
       return json({ ok: true, msg: "已成功发送邀请,请留意邮件",T3:T3}, 200); 
