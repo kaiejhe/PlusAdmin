@@ -311,7 +311,7 @@ export async function TeamEmail(request, env){
           .bind("o2", Card, "Team").run()
       const T2 =  await db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
           .bind(TeamRES.id).run()
-      const T3 =  await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, Time, State, created_at) VALUES (?, ?, ?, ?, ?)`)
+      const T3 =  await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, "Time", "State", created_at) VALUES (?, ?, ?, ?, ?)`)
           .bind(Email, TeamRES.accEmail, CardRes.CardTime, "o2", chinaTime).run()
   
       return json({ ok: true, msg: "已成功发送邀请,请留意邮件",T1:T1,T2:T2,T3:T3}, 200); 
