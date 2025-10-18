@@ -289,7 +289,7 @@ export async function TeamEmail(request, db){
     Accid:TeamRES.TeamID,     //团队编号
     usEmid:TeamRES.id,        //团队帐号ID
     role:CardRes.CardTime     //赋予权限  == 30? 'account-owner' : 'standard-user'
-  })
+  },db)
     return json({ ok: true, msg: "Team邀请请求已成功提交", HUIGUN }, 200);
   } catch (error) {
     return json({ ok: false, msg: "Team 邀请请求发送失败", error: String(error) }, 500);
