@@ -304,17 +304,29 @@ export async function TeamEmail(request, env){
     body: DataJson
   });
   const result = await res.json();
-  if(res.ok && result.status==='success'){
-    const TmData = {
+  const TmData = {
       Email:Email,
       TeamRES:TeamRES.accEmail,
       CardRes:CardRes.CardTime,
       chinaTime:chinaTime
     }
-    return json({ ok: true, msg: "已成功发送邀请,请留意邮件",T3:TmData}, 200); 
-    
+  if(res.ok && result.status==='success'){
+    try {
+      const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+      const T1 =  await db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
+          .bind("o2", Card, "Team").run()
+      const T2 =  await db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
+          .bind(TeamRES.id).run()
+      
+      const T3 =  await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
+          .bind(Email, TeamRES.accEmail, CardRes.CardTime, "o2", chinaTime).run()
+  
+      return json({ ok: true, msg: "已成功发送邀请,请留意邮件",T1:T1,T2:T2,T3:T3}, 200); 
+    } catch (error) {
+      return json({ ok: false, msg: "服务器异常,请重试或联系客服处理",result:TmData,}, 200); 
+    }
   }else{
-    return json({ ok: false, msg: "团队邀请失败,请重试或联系客服处理",result:{ message: error?.message || String(error), stack: error?.stack },}, 200); 
+    return json({ ok: false, msg: "团队邀请失败,请重试或联系客服处理",result:result,}, 200); 
   }
   
 }
