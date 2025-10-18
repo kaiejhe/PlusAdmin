@@ -15,21 +15,21 @@ const json = (data, status = 200, headers = {}) =>
 //进入方法接受的参数
 export async function onRequestPost({ request, env }) {
   const { msgoogle,data } = await request.json().catch(() => ({}));
-    if (msgoogle === 'login'  && request.method === 'POST') return login(data, env)
-    if (msgoogle === 'addlist'  && request.method === 'POST') return addlist(data, env)
-    if (msgoogle === 'dellist'  && request.method === 'POST') return dellist(data, env)
-    if (msgoogle === 'updlist'  && request.method === 'POST') return updlist(data, env)
-    if (msgoogle === 'getlist'  && request.method === 'POST') return getlist(data, env)
-    if (msgoogle === 'foradd'  && request.method === 'POST') return foradd(data, env)
-    if (msgoogle === 'AdminToken'  && request.method === 'POST') return AdminToken(data, env)
-    if (msgoogle === 'Card'  && request.method === 'POST') return Card(data, env)
-    if (msgoogle === 'TeamEmail'  && request.method === 'POST') return TeamEmail(data, env)
+  const db = env.TokenD1;
+    if (msgoogle === 'login'  && request.method === 'POST') return login(data, db)
+    if (msgoogle === 'addlist'  && request.method === 'POST') return addlist(data, db)
+    if (msgoogle === 'dellist'  && request.method === 'POST') return dellist(data, db)
+    if (msgoogle === 'updlist'  && request.method === 'POST') return updlist(data, db)
+    if (msgoogle === 'getlist'  && request.method === 'POST') return getlist(data, db)
+    if (msgoogle === 'foradd'  && request.method === 'POST') return foradd(data, db)
+    if (msgoogle === 'AdminToken'  && request.method === 'POST') return AdminToken(data, db)
+    if (msgoogle === 'Card'  && request.method === 'POST') return Card(data, db)
+    if (msgoogle === 'TeamEmail'  && request.method === 'POST') return TeamEmail(data, db)
     return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
 //通用添加数据
-async function addlist(request,env) {
-    const db = env.TokenD1
+async function addlist(request,db) {
     const { table, data } = request;
     if (!table || !data) return json({ ok: false, msg: "当前页面不存在" }, 400);
     const columns = await getTableMeta(db, table);
@@ -47,8 +47,7 @@ async function addlist(request,env) {
 }
 
 //通用删除数据
-async function dellist(request,env) {
-    const db = env.TokenD1
+async function dellist(request,db) {
     const { table,id } = request;
     if (!table||!id) return json({ ok: false, msg: "当前页面不存在" }, 400);
     const sql = `DELETE FROM ${table} WHERE id = ?`;
@@ -65,8 +64,7 @@ async function dellist(request,env) {
 }
 
 //通用修改
-async function updlist(request,env) {
-    const db = env.TokenD1
+async function updlist(request,db) {
     const { table, updates,id } = request;
     if (!table || !updates ||!id) return json({ ok: false, msg: "当前页面不存在" }, 400);
     const columns = await getTableMeta(db, table);
@@ -88,8 +86,7 @@ async function updlist(request,env) {
 }
 
 //通用查询
-async function getlist(request,env) {
-    const db = env.TokenD1
+async function getlist(request,db) {
     const { table, filters = {}, page = 1, pageSize = 10 } = request;
     if (!table) {
       return json({ ok: false, msg: "当前页面不存在" }, 400);
@@ -129,8 +126,7 @@ async function getlist(request,env) {
 }
 
 //批量添加方法
-async function foradd(request,env) {
-    const db = env.TokenD1;
+async function foradd(request,db) {
     const {CardList = [],type,CardTime=null} = request;
     if(CardList.length < 1 ) return json({ ok: false, msg: "当前页面不存在1" }, 404);
     const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
@@ -154,8 +150,7 @@ async function foradd(request,env) {
 
 
 //管理员登录
-async function login(request,env) {
-  const db = env.TokenD1;
+async function login(request,db) {
   if (!db) return json({ ok: false, msg: "服务器异常" }, 500);
   try {
     const { username, password } = request;
@@ -204,8 +199,7 @@ function generateOrderId() {
 }
 
 //后台提交订单
-export async function AdminToken(request, env){
-  const db = env.TokenD1;
+export async function AdminToken(request, db){
   const { Token, Cardcode } = request;
   if (!Token || !Cardcode || !db) {
       return json({ ok: false, msg: "当前页面不存在" }, 200);
@@ -253,8 +247,7 @@ export async function AdminToken(request, env){
 
 
 //Team验证激活码是否存在
-export async function Card(request, env){
-  const db = env.TokenD1;
+export async function Card(request, db){
   const { Card } = request;
   const CardRes = await db.prepare("SELECT cardtext, type ,state , CardTime FROM  card WHERE cardtext = ? AND type = ?")
   .bind(Card, "Team").first();
@@ -266,8 +259,7 @@ export async function Card(request, env){
 }
 
 //Team 提交订单并且邀请
-export async function TeamEmail(request, env){
-  const db = env.TokenD1;
+export async function TeamEmail(request, db){
   const { Card,Email } = request;
   if(!Card || !Email) return json({ ok: false, msg: "参数异常!",Card:Card,Email:Email }, 200);
   const CardRes = await db.prepare("SELECT * FROM  card WHERE cardtext = ? AND type = ?")
@@ -281,51 +273,67 @@ export async function TeamEmail(request, env){
   const TeamRES = await db.prepare(`
   SELECT * FROM teamtoken WHERE State = ? AND Time = ? AND usNum > 0 `).bind("o1", CardRes.CardTime).first();
   if(!TeamRES) return json({ ok: false, msg: "库存不足,请联系客服添加库存!",TeamRES:TeamRES,SS:CardRes.CardTime }, 200);
-  let DataJson
-  if(CardRes.CardTime==30){
-    DataJson = JSON.stringify({
-      Email: [Email],
-      Token: TeamRES.AccToken,
-      Accid:TeamRES.TeamID,
-      role:"standard-user"
+  try {
+    const stmts = [
+      db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
+        .bind("o3", Card, "Team"),
+      db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
+        .bind(TeamRES.id)
+    ]
+    const HUIGUN = await db.batch(stmts);
+    AddTeam({
+    Card:Card,                //兑换码
+    usEmail: [Email],         //用户邮箱
+    acEmail:TeamRES.Email,    //团队邮箱
+    Token: TeamRES.AccToken,  //团队密钥
+    Accid:TeamRES.TeamID,     //团队编号
+    usEmid:TeamRES.id,        //团队帐号ID
+    role:CardRes.CardTime     //赋予权限  == 30? 'account-owner' : 'standard-user'
   })
-  }else{
-    DataJson = JSON.stringify({
-      Email: [Email],
-      Token: TeamRES.AccToken,
-      Accid:TeamRES.TeamID,
-      role:"standard-user"
-  })
+    return json({ ok: true, msg: "Team邀请请求已成功提交", HUIGUN }, 200);
+  } catch (error) {
+    return json({ ok: false, msg: "Team 邀请请求发送失败", error: String(error) }, 500);
   }
-  const res = await fetch('http://pyapi.my91.my/TeamAdd', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: DataJson
-  });
-  const result = await res.json();
-  if(res.ok && result.status==='success'){
-    try {
-      const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
-      const T1 =  await db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
-          .bind("o2", Card, "Team").run()
-      const T2 =  await db.prepare("UPDATE teamtoken SET usNum = usNum - 1 WHERE id = ? AND usNum > 0")
-          .bind(TeamRES.id).run()
-      const T3 =  await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
-          .bind(Email, TeamRES.Email, TeamRES.Time, "o2", chinaTime).run()
-  
-      return json({ ok: true, msg: "已成功发送邀请,请留意邮件",T1:T1,T2:T2,T3:T3}, 200); 
-    } catch (error) {
-      return json({ ok: false, msg: "服务器异常,请重试或联系客服处理",result:TmData,}, 200); 
-    }
-  }else{
-    return json({ ok: false, msg: "团队邀请失败,请重试或联系客服处理",result:result,}, 200); 
-  }
-  
 }
 
-
-
-
-//后台验证TOKEN是否符合
+//发送团队邀请记录
+export async function AddTeam(Tm,db){
+  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+  const JsonData = JSON.stringify({
+    Email: [Tm.usEmail],
+    Token: Tm.AccToken,
+    Accid:Tm.TeamID,
+    role:Tm.role == 30? 'account-owner' : 'standard-user'
+  })
+  try {
+    const res = await fetch('http://pyapi.my91.my/TeamAdd', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JsonData
+    });
+    const result = await res.json();
+    if(result.status==='success'){
+      await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
+        .bind(Email, TeamRES.Email, TeamRES.Time, "o2", chinaTime).run()
+    }else{
+      await db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
+        .bind(Email, TeamRES.Email, TeamRES.Time, "o3", chinaTime).run()
+    }
+  } catch (error) {
+    try {
+      const stmts = [
+        db.prepare("UPDATE card SET state = ? WHERE cardtext = ? AND type = ?")
+          .bind("o1", Card, "Team"),
+        db.prepare("UPDATE teamtoken SET usNum = usNum + 1 WHERE id = ?")
+          .bind(Tm.id),
+        db.prepare(`INSERT INTO teamorder (usEmail, accEmail, orTime, State, created_at) VALUES (?, ?, ?, ?, ?)`)
+          .bind(Tm.usEmail, Tm.acEmail, Tm.role, "o3", chinaTime)
+      ]
+        await db.batch(stmts);
+    } catch (error) {
+      console.log("----出错啦----")
+    }
+  }
+}
