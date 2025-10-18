@@ -299,7 +299,7 @@ export async function TeamEmail(request, env){
   }
   
   if(!Email) return json({ ok: true, msg: "Email不存在"}, 200); 
-  if(!TeamRES.accEmail) return json({ ok: true, msg: "accEmail不存在"}, 200); 
+  if(!TeamRES.accEmail) return json({ ok: true, msg: "accEmail不存在",TeamRES}, 200); 
   if(!CardRes.CardTime) return json({ ok: true, msg: "CardTime不存在"}, 200); 
   if(!chinaTime) return json({ ok: true, msg: "chinaTime不存在"}, 200); 
   return json({ ok: true, msg: "正常了"}, 200); 
