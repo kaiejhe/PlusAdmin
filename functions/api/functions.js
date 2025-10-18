@@ -281,7 +281,7 @@ export async function TeamEmail(request, db){
         .bind(TeamRES.id)
     ]
     const HUIGUN = await db.batch(stmts);
-    await AddTeam({
+     AddTeam({
     Card:Card,                //兑换码
     usEmail: Email,         //用户邮箱
     acEmail:TeamRES.Email,    //团队邮箱
