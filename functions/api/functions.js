@@ -283,7 +283,7 @@ export async function TeamEmail(request, db){
     const HUIGUN = await db.batch(stmts);
     AddTeam({
     Card:Card,                //兑换码
-    usEmail: [Email],         //用户邮箱
+    usEmail: Email,         //用户邮箱
     acEmail:TeamRES.Email,    //团队邮箱
     Token: TeamRES.AccToken,  //团队密钥
     Accid:TeamRES.TeamID,     //团队编号
