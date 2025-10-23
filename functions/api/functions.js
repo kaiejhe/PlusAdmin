@@ -1,535 +1,364 @@
-"use strict";
+import { date } from "zod/v4";
 
-/**
- * Cloudflare Pages Functions handler for Team Plus Admin.
- * All requests hit `/api/functions` and are routed by the `msgoogle` field.
- */
-
-const BASE_HEADERS = {
-  "Content-Type": "application/json; charset=utf-8",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
-
-const OK = 200;
-
-const ACTION_HANDLERS = {
-  login,
-  addlist,
-  dellist,
-  updlist,
-  getlist,
-  foradd,
-  Card,
-  AdminToken,
-  TeamEmail,
-};
-
-const CARD_STATE_AVAILABLE = "o1";
-const CARD_STATE_CONSUMED = "o2";
-const CARD_STATE_INVALID = "o3";
-
-const TEAM_TOKEN_STATE_ACTIVE = "o1";
-const TEAM_ORDER_STATE_PENDING = "o1";
-const TEAM_ORDER_STATE_FINISHED = "o2";
-
-const PLUS_ORDER_STATE_PENDING = "o1";
-
-function json(body, status = OK, headers = {}) {
-  return new Response(JSON.stringify(body), {
+//协议头处理,跨域
+const json = (data, status = 200, headers = {}) =>
+  new Response(JSON.stringify(data), {
     status,
-    headers: {
-      ...BASE_HEADERS,
-      ...headers,
+    headers: { 
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      ...headers 
     },
   });
+let ZidongTeam = false  //开启自动检测状态
+let Zhixingzhong = false //是否处于执行中
+//进入方法接受的参数
+export async function onRequestPost({ request, env }) {
+  const { msgoogle,data={} } = await request.json().catch(() => ({}));
+  const db = env.TokenD1;
+    if (msgoogle === 'login'  && request.method === 'POST') return login(data, db)
+    if (msgoogle === 'addlist'  && request.method === 'POST') return addlist(data, db)
+    if (msgoogle === 'dellist'  && request.method === 'POST') return dellist(data, db)
+    if (msgoogle === 'updlist'  && request.method === 'POST') return updlist(data, db)
+    if (msgoogle === 'getlist'  && request.method === 'POST') return getlist(data, db)
+    if (msgoogle === 'foradd'  && request.method === 'POST') return foradd(data, db)
+    if (msgoogle === 'AdminToken'  && request.method === 'POST') return AdminToken(data, db)
+    if (msgoogle === 'TeamCard'  && request.method === 'POST') return Card(data, db)
+    if (msgoogle === 'TeamEmail'  && request.method === 'POST') return TeamEmail(data, env)
+    if (msgoogle === 'GetTeamApi'  && request.method === 'POST') return GetTeamApi(data, env)
+    return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
-async function readRequestBody(request) {
-  try {
-    const payload = await request.json();
-    if (typeof payload === "object" && payload !== null) {
-      return payload;
+//通用添加数据
+async function addlist(request,db) {
+    const { table, data } = request;
+    if (!table || !data) return json({ ok: false, msg: "当前页面不存在" }, 400);
+    const columns = await getTableMeta(db, table);
+    const validKeys = Object.keys(data).filter(key => columns.includes(key));
+    const validValues = validKeys.map(key => data[key]);
+    if (validKeys.length === 0) return json({ ok: false, msg: "当前页面不存在" }, 400);
+    const placeholders = validKeys.map(() => "?").join(", ");
+    const sql = `INSERT INTO ${table} (${validKeys.join(", ")}) VALUES (${placeholders})`;
+    try {
+        const res = await db.prepare(sql).bind(...validValues).run();
+        return json({ ok: true, msg: "新增成功", id: res.meta.last_row_id }, 201);
+    } catch (error) {
+        return json({ ok: false, msg: "添加数据失败", error: String(error) }, 500);
     }
-  } catch (error) {
-    // fall through – invalid JSON handled by caller
-  }
-  return {};
 }
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
-  const { msgoogle, data = {} } = await readRequestBody(request);
+//通用删除数据
+async function dellist(request,db) {
+    const { table,id } = request;
+    if (!table||!id) return json({ ok: false, msg: "当前页面不存在" }, 400);
+    const sql = `DELETE FROM ${table} WHERE id = ?`;
+    try {
+        const res = await db.prepare(sql).bind(id).run();
+        if(res.success){
+            return json({ ok: true, msg: "删除成功" }, 200);
+        }else{
+            return json({ ok: false, msg: "删除失败" }, 404);
+        }
+    } catch (error) {
+        return json({ ok: false, msg: "删除数据失败", error: String(error) }, 500);
+    }
+}
 
-  if (!msgoogle) {
-    return json({ ok: false, msg: "缺少 msgoogle 参数" }, 400);
-  }
+//通用修改
+async function updlist(request,db) {
+    const { table, updates,id } = request;
+    if (!table || !updates ||!id) return json({ ok: false, msg: "当前页面不存在" }, 400);
+    const columns = await getTableMeta(db, table);
+    const validKeys = Object.keys(updates).filter(key => columns.includes(key));
+    const validValues = validKeys.map(key => updates[key]);
+    if (validKeys.length === 0) return json({ ok: false, msg: "当前页面不存在" }, 400);
+    const setClause = validKeys.map(key => `${key} = ?`).join(", ");
+    const sql = `UPDATE ${table} SET ${setClause} WHERE id = ?`;
+    try {
+        const res = await db.prepare(sql).bind(...validValues, id).run();
+        if (res.success) {
+            return json({ ok: true, msg: "更新成功" }, 200);
+        } else {
+            return json({ ok: false, msg: "更新失败" }, 404);
+        }
+    } catch (error) {
+        return json({ ok: false, msg: "更新数据失败", error: String(error) }, 500);
+    }
+}
 
-  const handler = ACTION_HANDLERS[msgoogle];
-  if (!handler) {
-    return json({ ok: false, msg: "当前页面不存在" }, 404);
-  }
+//通用查询
+async function getlist(request,db) {
+    const { table, filters = {}, page = 1, pageSize = 10 } = request;
+    if (!table) {
+      return json({ ok: false, msg: "当前页面不存在" }, 400);
+    }
+    let whereClause = '';
+    const values = [];
+    if (filters && Object.keys(filters).length > 0) {
+      whereClause = "WHERE ";
+      const filterKeys = Object.keys(filters);
+      filterKeys.forEach((key, index) => {
+        whereClause += `${key} = ?`;
+        values.push(filters[key]);
+        // 如果不是最后一个条件，添加 AND
+        if (index < filterKeys.length - 1) {
+          whereClause += " AND ";
+        }
+      });
+    }
+    const offset = (page - 1) * pageSize;
+    const sql = `SELECT * FROM ${table} ${whereClause} LIMIT ?, ?`;
+    const countSql = `SELECT COUNT(*) AS total FROM ${table} ${whereClause}`;
 
-  const db = env?.TokenD1;
-  if (!db) {
-    return json({ ok: false, msg: "数据库未初始化" }, 500);
-  }
+    try {
+        // 查询总数量
+        const countRes = await db.prepare(countSql).bind(...values).first();
+        const total = countRes?.total || 0;
+        // 查询当前页数据
+        const res = await db.prepare(sql).bind(...values, offset, pageSize).all();
+        if (res) {
+            return json({ ok: true, data: res.results,total,msg:"查询成功" }, 200);
+        } else {
+            return json({ ok: false, msg: "查询失败" }, 404);
+        }
+    } catch (error) {
+        return json({ ok: false, msg: "查询失败", error: String(error) }, 500);
+    }
+}
 
+//批量添加方法
+async function foradd(request,db) {
+    const {CardList = [],type,AfterSales=0} = request;
+    if(CardList.length < 1 ) return json({ ok: false, msg: "当前页面不存在" }, 404);
+    const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
+    let SqlName = '';
+    let Tssss = null;
+    let columns = [];
+    let placeholders = [];
+    if (type === "Plus") {
+      SqlName = "PlusCard";
+      Tssss = CardList.map((index) => {
+        return {
+          PlusCard: index,
+          PlusCardState: "o1",
+          AddTime: chinaTime,
+        };
+      });
+      columns = ["PlusCard", "PlusCardState", "AddTime"];
+    }
+    if(type==='Team'){
+      SqlName = 'TeamCard'
+      Tssss = CardList.map((index) => {
+        return {
+          TeamCard: index,
+          TeamCardState: "o1",
+          AfterSales:AfterSales,
+          AddTime: chinaTime,
+        };
+      });
+       columns = ["TeamCard", "TeamCardState", "AfterSales", "AddTime",];
+    }
+    
+    try {
+      const placeholders = columns.map(() => "?").join(", ");
+      const query = `INSERT INTO ${SqlName} (${columns.join(", ")}) VALUES (${placeholders})`;
+      const statements = Tssss.map((item) => db.prepare(query).bind(...columns.map(col => item[col])));
+      await db.batch(statements);
+      return json({ ok: true, msg: "添加成功" }, 200);
+    } catch (error) {
+        return json({ ok: false, msg: "添加失败", error: error.message }, 500);
+    }
+}
+
+
+//管理员登录
+async function login(request,db) {
+  if (!db) return json({ ok: false, msg: "服务器异常" }, 500);
   try {
-    return await handler(data, db, context);
-  } catch (error) {
-    console.error(`[${msgoogle}] handler error`, error);
-    return json({ ok: false, msg: "服务器内部错误", error: String(error) }, 500);
+    const { username, password } = request;
+    if (!username || !password) return json({ ok: false, msg: "管理员账号密码不能为空" }, 400);
+    const probe = await db.prepare("SELECT 1 AS ok").first();
+    if (!probe) return json({ ok: false, msg: "D1 探活失败" }, 500);
+    const user = await db.prepare("SELECT  username, password FROM admin WHERE username = ? AND password = ?").bind(username, password).first();
+    if (!user) return json({ ok: false, msg: "用户名或密码错误" }, 401);
+    return json({ ok: true, msg: "登录成功" }, 200);
+
+  } catch (e) {
+    // 关键：把真实错误返回，便于定位；调试好后再去掉 error 字段
+    return json({ ok: false, msg: "Server Error", error: String(e) }, 500);
   }
 }
 
+// 获取表的字段信息
+async function getTableMeta(db, table) {
+  const { results } = await db.prepare(`PRAGMA table_info(${table})`).all(); // 获取表的列信息
+  const columns = results.map(r => r.name);  // 提取字段名
+  return columns;
+}
+
+// 👇 必须新增：处理 OPTIONS 预检请求
 export async function onRequestOptions() {
   return new Response(null, {
     status: 204,
-    headers: BASE_HEADERS,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
   });
 }
-
-async function addlist(request, db) {
-  const { table, data } = request;
-  if (!table || !data) {
-    return json({ ok: false, msg: "当前页面不存在" }, 400);
+//随机订单号生成
+function generateOrderId() {
+  // 工具函数，生成指定长度的随机大写字符串
+  function randomStr(len) {
+    return Math.random().toString(36).substring(2, 2 + len);
   }
-
-  const columns = await getTableMeta(db, table);
-  const validKeys = Object.keys(data).filter((key) => columns.includes(key));
-
-  if (!validKeys.length) {
-    return json({ ok: false, msg: "当前页面不存在" }, 400);
-  }
-
-  const placeholders = validKeys.map(() => "?").join(", ");
-  const sql = `INSERT INTO ${table} (${validKeys.join(", ")}) VALUES (${placeholders})`;
-  const values = validKeys.map((key) => data[key]);
-
-  try {
-    const res = await db.prepare(sql).bind(...values).run();
-    return json({ ok: true, msg: "新增成功", id: res.meta.last_row_id }, 201);
-  } catch (error) {
-    return json({ ok: false, msg: "添加数据失败", error: String(error) }, 500);
-  }
+  const part1 = randomStr(4); // 前 6 位
+  const part2 = randomStr(4); // 中间 4 位
+  const part3 = randomStr(4); // 中间 4 位
+  const part4 = randomStr(4); // 后 6 位
+  return `${part1}-${part2}-${part3}-${part4}`;
 }
 
-async function dellist(request, db) {
-  const { table, id } = request;
-  if (!table || !id) {
-    return json({ ok: false, msg: "当前页面不存在" }, 400);
-  }
-
-  const sql = `DELETE FROM ${table} WHERE id = ?`;
-  try {
-    const res = await db.prepare(sql).bind(id).run();
-    if (res.success) {
-      return json({ ok: true, msg: "删除成功" }, OK);
-    }
-    return json({ ok: false, msg: "删除失败" }, 404);
-  } catch (error) {
-    return json({ ok: false, msg: "删除数据失败", error: String(error) }, 500);
-  }
-}
-
-async function updlist(request, db) {
-  const { table, updates, id } = request;
-  if (!table || !updates || !id) {
-    return json({ ok: false, msg: "当前页面不存在" }, 400);
-  }
-
-  const columns = await getTableMeta(db, table);
-  const validKeys = Object.keys(updates).filter((key) => columns.includes(key));
-
-  if (!validKeys.length) {
-    return json({ ok: false, msg: "当前页面不存在" }, 400);
-  }
-
-  const setClause = validKeys.map((key) => `${key} = ?`).join(", ");
-  const sql = `UPDATE ${table} SET ${setClause} WHERE id = ?`;
-  const values = validKeys.map((key) => updates[key]);
-
-  try {
-    const res = await db.prepare(sql).bind(...values, id).run();
-    if (res.success) {
-      return json({ ok: true, msg: "更新成功" }, OK);
-    }
-    return json({ ok: false, msg: "更新失败" }, 404);
-  } catch (error) {
-    return json({ ok: false, msg: "更新数据失败", error: String(error) }, 500);
-  }
-}
-
-async function getlist(request, db) {
-  const { table, filters = {}, page = 1, pageSize = 10 } = request;
-
-  if (!table) {
-    return json({ ok: false, msg: "当前页面不存在" }, 400);
-  }
-
-  const clauses = [];
-  const values = [];
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === "") return;
-    clauses.push(`${key} = ?`);
-    values.push(value);
-  });
-
-  const whereClause = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const offset = (Number(page) - 1) * Number(pageSize);
-
-  const sql = `SELECT * FROM ${table} ${whereClause} LIMIT ?, ?`;
-  const countSql = `SELECT COUNT(*) AS total FROM ${table} ${whereClause}`;
-
-  try {
-    const [{ total = 0 } = {}] = await db.prepare(countSql).bind(...values).all()
-      .then((res) => res.results || []);
-    const list = await db
-      .prepare(sql)
-      .bind(...values, offset, Number(pageSize))
-      .all();
-
-    return json({
-      ok: true,
-      data: list?.results || [],
-      total,
-      msg: "查询成功",
-    });
-  } catch (error) {
-    return json({ ok: false, msg: "查询失败", error: String(error) }, 500);
-  }
-}
-
-async function foradd(request, db) {
-  const { CardList = [], type, AfterSales = 0 } = request;
-
-  if (!CardList.length) {
-    return json({ ok: false, msg: "当前页面不存在" }, 404);
-  }
-
-  const chinaTime = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }),
-  ).getTime();
-
-  let tableName = "";
-  let columns = [];
-  let rows = [];
-
-  if (type === "Plus") {
-    tableName = "PlusCard";
-    columns = ["PlusCard", "PlusCardState", "AddTime"];
-    rows = CardList.map((card) => ({
-      PlusCard: card,
-      PlusCardState: CARD_STATE_AVAILABLE,
-      AddTime: chinaTime,
-    }));
-  } else if (type === "Team") {
-    tableName = "TeamCard";
-    columns = ["TeamCard", "TeamCardState", "AfterSales", "AddTime"];
-    rows = CardList.map((card) => ({
-      TeamCard: card,
-      TeamCardState: CARD_STATE_AVAILABLE,
-      AfterSales,
-      AddTime: chinaTime,
-    }));
-  } else {
-    return json({ ok: false, msg: "当前页面不存在" }, 400);
-  }
-
-  const placeholders = columns.map(() => "?").join(", ");
-  const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})`;
-
-  try {
-    const statements = rows.map((row) =>
-      db.prepare(sql).bind(...columns.map((col) => row[col])),
-    );
-    await db.batch(statements);
-    return json({ ok: true, msg: "添加成功" }, OK);
-  } catch (error) {
-    return json({ ok: false, msg: "添加失败", error: String(error) }, 500);
-  }
-}
-
-async function login(request, db) {
-  if (!db) {
-    return json({ ok: false, msg: "服务器异常" }, 500);
-  }
-
-  const { username, password } = request;
-  if (!username || !password) {
-    return json({ ok: false, msg: "管理员账号密码不能为空" }, 400);
-  }
-
-  try {
-    const probe = await db.prepare("SELECT 1 AS ok").first();
-    if (!probe) {
-      return json({ ok: false, msg: "D1 探活失败" }, 500);
-    }
-
-    const user = await db
-      .prepare(
-        "SELECT username, password FROM admin WHERE username = ? AND password = ?",
-      )
-      .bind(username, password)
-      .first();
-
-    if (!user) {
-      return json({ ok: false, msg: "用户名或密码错误" }, 401);
-    }
-
-    return json({ ok: true, msg: "登录成功" }, OK);
-  } catch (error) {
-    return json({ ok: false, msg: "Server Error", error: String(error) }, 500);
-  }
-}
-
-async function AdminToken(request, db) {
+//后台提交订单
+export async function AdminToken(request, db){
   const { Token, Cardcode } = request;
-  if (!Token || !Cardcode) {
-    return json({ ok: false, msg: "当前页面不存在" }, 400);
+  if (!Token || !Cardcode || !db) {
+      return json({ ok: false, msg: "当前页面不存在" }, 200);
   }
-
   try {
-    const existing = await db
-      .prepare(
-        "SELECT id FROM plusorder WHERE AccessToken = ? AND State = ? LIMIT 1",
-      )
-      .bind(Token, PLUS_ORDER_STATE_PENDING)
-      .first();
-
-    if (existing) {
-      return json({ ok: false, msg: "正在订阅中,请勿重复提交" }, OK);
-    }
-
-    const payload = parseJwtPayload(Token);
-    if (!payload.email || !payload.exp) {
-      return json({ ok: false, msg: "JSON参数错误" }, OK);
-    }
-
-    if (Math.floor(Date.now() / 1000) > payload.exp) {
-      return json({ ok: false, msg: "JSON参数已过期" }, OK);
-    }
-
+    const existingOrder = await db
+      .prepare("SELECT id FROM plusorder WHERE AccessToken = ? AND State ='o1'")
+      .bind(Token)
+      .all();
+    if (existingOrder.results.length > 0)
+      return json({ ok: false, msg: "正在订阅中,请勿重复提交" }, 200);
+    // 🔹 解析 JWT
+    const parts = Token.split(".");
+    if (parts.length !== 3)
+      return json({ ok: false, msg: "JSON参数错误" }, 200);
+    let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    const payloadDecoded = decodeURIComponent(escape(atob(base64)));
+    const payloadJson = JSON.parse(payloadDecoded);
+    const Email = payloadJson["https://api.openai.com/profile"]?.email;
+    const exp = payloadJson.exp;
+    if (!Email || !exp) return json({ ok: false, msg: "JSON参数错误" }, 200);
+    if (Math.floor(Date.now() / 1000) > exp)
+      return json({ ok: false, msg: "JSON参数已过期" }, 200);
+    // 🔹 生成唯一订单ID
     const orderId = generateOrderId();
     const timestamp = Math.floor(Date.now() / 1000);
-
-    const result = await db
+    // 🔹 写入订单
+    const orderInsert = await db
       .prepare(
-        `INSERT INTO plusorder (usOrder, Email, Cardkey, AccessToken, State, created_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `
+    INSERT INTO plusorder (usOrder, Email, Cardkey, AccessToken, State, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+    `
       )
-      .bind(
-        orderId,
-        payload.email,
-        Cardcode,
-        Token,
-        PLUS_ORDER_STATE_PENDING,
-        timestamp,
-      )
+      .bind(orderId, Email, Cardcode, Token, "o1", timestamp)
       .run();
-
-    if (result.meta.last_row_id < 1) {
-      return json({ ok: false, msg: "Plus订阅任务提交失败" }, OK);
+    if (orderInsert.meta.last_row_id<1) {
+      return json({ ok: false, msg:"Plus订阅任务提交失败" }, 200);
     }
+    return json({ ok: true, msg: "Plus订阅任务提交成功" }, 200);
+  } catch (error) {}
+     return json({ ok: false, msg: "Plus订阅任务提交失败" }, 500);
+}
 
-    return json({ ok: true, msg: "Plus订阅任务提交成功" }, OK);
-  } catch (error) {
-    return json({ ok: false, msg: "Plus订阅任务提交失败", error: String(error) }, 500);
+
+//TeamCard有效性检测
+export async function Card(request, db){
+  const { Card } = request;
+  const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?")
+  .bind(Card).first();
+  if(CardRes){
+    const Order = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
+    return json({ ok: true, msg: "验证成功",data:{Card:CardRes,Order:Order}}, 200);
+  }else{
+    return json({ ok: false, msg: "卡密不存在" }, 200);
   }
 }
 
-async function TeamEmail(request, db) {
-  const { Card, Email } = request;
-
-  if (!Card || !Email) {
-    return json({ ok: false, msg: "参数异常", Card, Email }, OK);
+//Team 提交订单并且邀请
+export async function TeamEmail(request, env){
+  const { Card,Email } = request;
+  const db = env.TokenD1
+  if(!Card || !Email) return json({ ok: false, msg: "参数异常!",Card:Card,Email:Email }, 200);
+  const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?")
+  .bind(Card).first();
+  if(!CardRes) return json({ ok: false, msg: "兑换码不存在" }, 200);
+  if(CardRes.TeamCardState!='o1'){
+    if(CardRes.TeamCardState=='o2') return json({ ok: false, msg: "兑换码已使用!" }, 200);
+    if(CardRes.TeamCardState=='o3') return json({ ok: false, msg: "兑换码已失效!" }, 200);
+    return json({ ok: false, msg: "当前页面不存在",data:CardRes }, 200); 
   }
-
-  const cardRecord = await db
-    .prepare("SELECT * FROM TeamCard WHERE TeamCard = ?")
-    .bind(Card)
-    .first();
-
-  if (!cardRecord) {
-    return json({ ok: false, msg: "兑换码不存在" }, OK);
-  }
-
-  if (cardRecord.TeamCardState !== CARD_STATE_AVAILABLE) {
-    if (cardRecord.TeamCardState === CARD_STATE_CONSUMED) {
-      return json({ ok: false, msg: "兑换码已使用" }, OK);
-    }
-    if (cardRecord.TeamCardState === CARD_STATE_INVALID) {
-      return json({ ok: false, msg: "兑换码已失效" }, OK);
-    }
-    return json({ ok: false, msg: "当前页面不存在" }, OK);
-  }
-
-  const teamRecord = await db
-    .prepare(
-      "SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey > 0",
-    )
-    .bind(TEAM_TOKEN_STATE_ACTIVE, cardRecord.AfterSales)
-    .first();
-
-  if (!teamRecord) {
-    return json({ ok: false, msg: "当前产品库存不足,请联系客服补充库存。" }, OK);
-  }
-
-  const shanghaiTimestamp = getShanghaiUnixSeconds();
-  const statements = [
-    db
-      .prepare(
-        "UPDATE TeamCard SET TeamCardState = ? WHERE TeamCard = ? AND TeamCardState = ?",
-      )
-      .bind(CARD_STATE_CONSUMED, Card, CARD_STATE_AVAILABLE),
-    db
-      .prepare(
-        "UPDATE TeamToken SET NumKey = NumKey - 1 WHERE id = ? AND NumKey > 0",
-      )
-      .bind(teamRecord.id),
-    db
-      .prepare(
-        `INSERT INTO TeamOrder (OrderTeamID, Order_us_Email, AfterSales, TeamCard, TeamOrderState, TeamNum, AddTime)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(
-        teamRecord.TeamID,
-        Email,
-        teamRecord.AfterSales,
-        Card,
-        TEAM_ORDER_STATE_PENDING,
-        teamRecord.NumKey,
-        shanghaiTimestamp,
-      ),
-  ];
-
+  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+  const TeamToken = await db.prepare(`SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey > 0 `)
+      .bind("o1", CardRes.AfterSales).first();
+  if(!TeamToken) return json({ ok: false, msg: "当前商品库存不足",data:TeamToken }, 200);
+  const stmts = [
+    db.prepare("UPDATE TeamToken SET NumKey = NumKey - 1 WHERE id = ? AND NumKey > 0").bind(TeamToken.id),
+    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind("o2",chinaTime,Card),
+    db.prepare( `INSERT INTO TeamOrder (Order_us_Email, AfterSales, TeamCard, TeamOrderState,AddTime,OrderTeamID) VALUES (?, ?, ?,?,?,?)`)
+      .bind(Email, CardRes.AfterSales, Card, 'o1',chinaTime,TeamToken.TeamID)
+  ]
   try {
-    await db.batch(statements);
+    await db.batch(stmts);
+    const GetOrder = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
+    return json({ ok: true, msg: "订单创建成功",data:GetOrder }, 200);
   } catch (error) {
-    return json({ ok: false, msg: "提交失败,自动回滚!", error: String(error) }, OK);
+    return json({ ok: false, msg: "订单创建失败"}, 200);
   }
+}
 
-  const inviteResult = await sendTeamInvite({
-    Email,
-    token: teamRecord.AccToken,
-    accountId: teamRecord.TeamID,
+//发送邀请请求
+export async function GetTeamApi(data={},env){
+  const db = env.TokenD1
+  let TeamD1,TeamToken
+  const {int=null} = data
+  //获取当前时间戳
+  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+  //判断是否传入订单编号
+  if(int){//传入了订单编号
+    TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamOrderState = ? AND id = ?").bind("o1",int).first();
+    if(!TeamD1) return json({ ok: false, msg: "订单查询失败",data:TeamD1}, 200);
+  }else{//未传入订单编号
+    TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamOrderState = ?").bind("o1").first();
+    if(!TeamD1) return json({ ok: false, msg: "暂无等待处理的订单"}, 200);
+  }
+  //查询订单绑定的Team团队帐号信息
+  TeamToken = await db.prepare(`SELECT * FROM TeamToken WHERE TeamID = ?`).bind(TeamD1.OrderTeamID).first();
+  if(!TeamToken) return json({ ok: false, msg: "查询订单绑定的Team团队失败"}, 200);
+  //发送团队进入邀请[邮箱]
+  const JsonData = JSON.stringify({
+    Email: [TeamD1.Order_us_Email],
+    Token: TeamToken.AccToken,
+    Accid: TeamToken.TeamID,
+    role: "standard-user",
   });
-
-  if (inviteResult?.status === "success") {
-    await db
-      .prepare(
-        "UPDATE TeamOrder SET TeamOrderState = ?, UpdTime = ? WHERE TeamCard = ? AND TeamOrderState = ? AND Order_us_Email = ?",
-      )
-      .bind(TEAM_ORDER_STATE_FINISHED, shanghaiTimestamp, Card, TEAM_ORDER_STATE_PENDING, Email)
-      .run();
-    return json({ ok: true, msg: "成功发送团队邀请", JSON: inviteResult }, OK);
-  }
-
-  // 失败时尝试回滚一些业务状态
-  await db
-    .prepare(
-      "UPDATE TeamToken SET NumKey = NumKey + 1 WHERE id = ?",
-    )
-    .bind(teamRecord.id)
-    .run()
-    .catch(() => {});
-
-  await db
-    .prepare(
-      "UPDATE TeamCard SET TeamCardState = ? WHERE TeamCard = ? AND TeamCardState = ?",
-    )
-    .bind(CARD_STATE_AVAILABLE, Card, CARD_STATE_CONSUMED)
-    .run()
-    .catch(() => {});
-
-  await db
-    .prepare(
-      "DELETE FROM TeamOrder WHERE TeamCard = ? AND Order_us_Email = ? AND TeamOrderState = ?",
-    )
-    .bind(Card, Email, TEAM_ORDER_STATE_PENDING)
-    .run()
-    .catch(() => {});
-
-  return json({ ok: false, msg: "发送邀请请求失败" }, OK);
-}
-
-async function Card(request, db) {
-  const { Card: cardValue } = request;
-  if (!cardValue) {
-    return json({ ok: false, msg: "卡密缺失" }, 400);
-  }
-
-  const record = await db
-    .prepare("SELECT * FROM TeamCard WHERE TeamCard = ?")
-    .bind(cardValue)
-    .first();
-
-  if (!record) {
-    return json({ ok: false, msg: "卡密不存在" }, OK);
-  }
-
-  return json({ ok: true, msg: "验证成功" }, OK);
-}
-
-async function getTableMeta(db, table) {
-  const { results = [] } = await db.prepare(`PRAGMA table_info(${table})`).all();
-  return results.map((col) => col.name);
-}
-
-function generateOrderId() {
-  const randomPart = () => Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `${randomPart()}-${randomPart()}-${randomPart()}-${randomPart()}`;
-}
-
-function parseJwtPayload(token) {
   try {
-    const [, payload = ""] = token.split(".");
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(normalized.length + (4 - (normalized.length % 4)) % 4, "=");
-    const jsonString = new TextDecoder().decode(
-      Uint8Array.from(atob(padded), (char) => char.charCodeAt(0)),
-    );
-    const parsed = JSON.parse(jsonString);
-    return {
-      email: parsed?.["https://api.openai.com/profile"]?.email || "",
-      exp: parsed?.exp,
-    };
-  } catch (error) {
-    return {};
-  }
-}
-
-function getShanghaiUnixSeconds() {
-  return Math.floor(
-    new Date(
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }),
-    ).getTime() / 1000,
-  );
-}
-
-async function sendTeamInvite({ Email, token, accountId }) {
-  try {
-    const res = await fetch("http://pyapi.my91.my/TeamAdd", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        Email: [Email],
-        Token: token,
-        Accid: accountId,
-        role: "standard-user",
-      }),
-    });
-    if (!res.ok) {
-      return null;
+    const result = await fetch("http://pyapi.my91.my/TeamAdd", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JsonData,
+      });
+    const res = await result.json()
+    if(res.status==='success'){ //成功发送团队邀请
+      await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? , UpdTime = ? WHERE id = ?")
+        .bind('o2',chinaTime,TeamD1.id).run()
+      const int = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
+      return json({ ok: true, msg: "邀请成功",data:int }, 200);
+    }else{  //发送团队邀请失败啦
+      return json({ ok: false, msg: "邀请失败[未知原因[202]",data:res }, 200);
     }
-    return await res.json();
-  } catch (error) {
-    console.error("发送邀请失败", error);
-    return null;
+  } catch (error) { //发起团队邀请出错啦
+    return json({ ok: false, msg: "邀请失败[未知原因[203]",data:error }, 200);
   }
 }
+

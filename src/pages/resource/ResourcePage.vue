@@ -5,17 +5,24 @@
     </Alert>
   </div>
   <div v-else class="space-y-6">
-    <header class="flex flex-col gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold text-gray-900">{{ config.title }}</h1>
-        <p class="mt-1 text-sm text-gray-500">{{ config.description }}</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <Button variant="outline" @click="refresh" :disabled="loading">
-          {{ loading ? '刷新中...' : '刷新' }}
-        </Button>
-        <Button v-if="config.enableBulkCreate" variant="outline" @click="openBulkModal">
-          批量添加
+<header class="flex flex-col gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="text-2xl font-semibold text-gray-900">{{ config.title }}</h1>
+    <p class="mt-1 text-sm text-gray-500">{{ config.description }}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <Button
+      variant="destructive"
+      @click="bulkDelete"
+      :disabled="!selectedIds.length || saving"
+    >
+      批量删除
+    </Button>
+    <Button variant="outline" @click="refresh" :disabled="loading">
+      {{ loading ? '刷新中...' : '刷新' }}
+    </Button>
+    <Button v-if="config.enableBulkCreate" variant="outline" @click="openBulkModal">
+      批量添加
         </Button>
         <Button @click="openCreateModal">新增</Button>
       </div>
@@ -62,16 +69,26 @@
       </div>
     </form>
 
-    <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th
-                v-for="column in tableColumns"
-                :key="column.key"
-                class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-              >
+<div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="w-12 px-4 py-3">
+            <input
+              type="checkbox"
+              class="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              :checked="allSelected"
+              :indeterminate.prop="indeterminateSelection"
+              @change="toggleSelectAll"
+              :disabled="!selectableRowIds.length"
+            />
+          </th>
+          <th
+            v-for="column in tableColumns"
+            :key="column.key"
+            class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+          >
                 {{ column.label }}
               </th>
               <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -79,25 +96,34 @@
               </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100 bg-white">
-            <tr v-if="loading">
-              <td :colspan="tableColumns.length + 1" class="px-4 py-6 text-center text-sm text-gray-500">
-                数据加载中...
-              </td>
-            </tr>
-            <tr v-else-if="!rows.length">
-              <td :colspan="tableColumns.length + 1" class="px-4 py-6 text-center text-sm text-gray-500">
-                当前暂无数据
-              </td>
-            </tr>
-            <tr v-else v-for="row in rows" :key="row.id ?? row._rowKey">
-              <td
-                v-for="column in tableColumns"
-                :key="column.key"
-                class="px-4 py-3 text-sm text-gray-700"
-              >
-                <span>{{ formatValue(column, row[column.key]) }}</span>
-              </td>
+      <tbody class="divide-y divide-gray-100 bg-white">
+        <tr v-if="loading">
+          <td :colspan="tableColumns.length + 2" class="px-4 py-6 text-center text-sm text-gray-500">
+            数据加载中...
+          </td>
+        </tr>
+        <tr v-else-if="!rows.length">
+          <td :colspan="tableColumns.length + 2" class="px-4 py-6 text-center text-sm text-gray-500">
+            当前暂无数据
+          </td>
+        </tr>
+        <tr v-else v-for="row in rows" :key="row.id ?? row._rowKey">
+          <td class="px-4 py-3">
+            <input
+              type="checkbox"
+              class="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              :disabled="row.id === undefined || row.id === null"
+              :checked="isRowSelected(row.id)"
+              @change="toggleRowSelection(row.id)"
+            />
+          </td>
+          <td
+            v-for="column in tableColumns"
+            :key="column.key"
+            :class="['px-4 py-3 text-sm text-gray-700', column.class]"
+          >
+            <span>{{ formatValue(column, row[column.key]) }}</span>
+          </td>
               <td class="px-4 py-3 text-right text-sm">
                 <div class="flex justify-end gap-2">
                   <Button variant="outline" size="sm" @click="openEditModal(row)">编辑</Button>
@@ -316,6 +342,46 @@
         </div>
       </Dialog>
     </TransitionRoot>
+
+    <TransitionRoot as="template" :show="loading || saving">
+      <TransitionChild
+        as="div"
+        enter="ease-out duration-200"
+        enter-from="opacity-0"
+        enter-to="opacity-100"
+        leave="ease-in duration-150"
+        leave-from="opacity-100"
+        leave-to="opacity-0"
+        class="fixed inset-0 z-40 flex items-center justify-center bg-white/70 backdrop-blur-sm"
+      >
+        <div class="flex items-center gap-3 rounded-lg bg-white px-4 py-3 shadow-lg">
+          <svg
+            class="size-5 animate-spin text-indigo-600"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            />
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            />
+          </svg>
+          <span class="text-sm font-medium text-gray-700">
+            {{ loading ? '正在加载数据…' : '操作进行中…' }}
+          </span>
+        </div>
+      </TransitionChild>
+    </TransitionRoot>
   </div>
 </template>
 
@@ -363,6 +429,7 @@ const total = ref(0);
 const rows = ref([]);
 const loading = ref(false);
 const saving = ref(false);
+const selectedIds = ref([]);
 
 const feedback = reactive({
   type: 'default',
@@ -422,10 +489,26 @@ const formFields = computed(() => {
     .filter(Boolean);
 });
 
+const selectableRowIds = computed(() =>
+  rows.value
+    .map((row) => row.id)
+    .filter((id) => id !== null && id !== undefined),
+);
+
 const isEditing = computed(() => Boolean(editingRecord.value));
 
 const maxPage = computed(() =>
   Math.max(1, Math.ceil(total.value / PAGE_SIZE)),
+);
+
+const allSelected = computed(
+  () =>
+    selectableRowIds.value.length > 0 &&
+    selectableRowIds.value.every((id) => selectedIds.value.includes(id)),
+);
+
+const indeterminateSelection = computed(
+  () => selectedIds.value.length > 0 && !allSelected.value,
 );
 
 watch(
@@ -450,6 +533,10 @@ function setFeedback(type, message) {
 function clearFeedback() {
   feedback.type = 'default';
   feedback.message = '';
+}
+
+function clearSelection() {
+  selectedIds.value = [];
 }
 
 function resetSearchModel() {
@@ -491,6 +578,13 @@ function formatValue(field, value) {
   const statusLabel = getStatusLabel(field.key, value);
   if (statusLabel) return statusLabel;
   if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (field?.previewLength && trimmed.length > field.previewLength) {
+      return `${trimmed.slice(0, field.previewLength)}…`;
+    }
+    return trimmed || '-';
+  }
   return String(value);
 }
 
@@ -511,6 +605,7 @@ async function fetchData() {
   if (!config.value) return;
   loading.value = true;
   clearFeedback();
+  clearSelection();
   try {
     const filters = buildFilters();
     const response = await fetchListApi({
@@ -554,6 +649,33 @@ function changePage(nextPage) {
 
 function refresh() {
   fetchData();
+}
+
+function isRowSelected(id) {
+  if (id === null || id === undefined) return false;
+  return selectedIds.value.includes(id);
+}
+
+function toggleRowSelection(id) {
+  if (id === null || id === undefined) return;
+  if (isRowSelected(id)) {
+    selectedIds.value = selectedIds.value.filter((item) => item !== id);
+  } else {
+    selectedIds.value = [...selectedIds.value, id];
+  }
+}
+
+function toggleSelectAll() {
+  if (!selectableRowIds.value.length) {
+    selectedIds.value = [];
+    return;
+  }
+
+  if (allSelected.value) {
+    selectedIds.value = [];
+  } else {
+    selectedIds.value = [...selectableRowIds.value];
+  }
 }
 
 function prepareFormModel(record) {
@@ -825,6 +947,41 @@ async function submitBulk() {
         setFeedback('success', successMessage);
       }
     }
+  }
+}
+
+async function bulkDelete() {
+  if (!config.value || !selectedIds.value.length) return;
+  const count = selectedIds.value.length;
+  const confirmed = window.confirm(`确定删除选中的 ${count} 条数据吗？此操作不可撤回。`);
+  if (!confirmed) return;
+
+  saving.value = true;
+  clearFeedback();
+  let successMessage = '';
+
+  try {
+    const table = config.value.table;
+    for (const id of selectedIds.value) {
+      const response = await deleteItemApi({ table, id });
+      if (!response?.ok) {
+        throw new Error(response?.msg || `删除失败 (ID: ${id})`);
+      }
+      successMessage = response.msg || '批量删除成功';
+    }
+
+    clearSelection();
+    await fetchData();
+    if (!successMessage) {
+      successMessage = '批量删除成功';
+    }
+    if (feedback.type !== 'error') {
+      setFeedback('success', successMessage);
+    }
+  } catch (error) {
+    setFeedback('error', error.message || '批量删除失败');
+  } finally {
+    saving.value = false;
   }
 }
 </script>

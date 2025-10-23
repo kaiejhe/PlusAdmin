@@ -1,5 +1,5 @@
-const API_BASE ="https://plusadmin.pages.dev/api/functions"
-
+// const API_BASE ="https://plusadmin.pages.dev/api/functions"
+const API_BASE = window.location.origin + '/api/functions'
 //批量生成订阅卡密
 export function RandomGroup(num = 1,Text){
     const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

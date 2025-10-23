@@ -58,13 +58,13 @@ export const RESOURCE_CONFIG = {
       'NumKey',
       'TeamTokenState',
       'AfterSales',
-      'VisaTxt',
+      'PlayContent',
     ],
     defaults: {
       TeamTokenState: 'o1',
       NumKey: 0,
       AfterSales: 0,
-      VisaTxt: '',
+      PlayContent: '',
     },
   },
   TeamOrder: {
