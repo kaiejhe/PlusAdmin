@@ -7,7 +7,7 @@ export function RandomGroup(num = 1,Text){
     const make = () => `${Text}-${group()}-${group()}-${group()}`;
     const set = new Set();
     while (set.size < num) set.add(make());
-    console.log("222", set)
+    console.log("2222", set)
     return [...set]
 }
 
