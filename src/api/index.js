@@ -34,10 +34,11 @@ export async function deleteItemApi({ table, id }) {
   return request('dellist', { table, id });
 }
 
-export async function bulkCreateCardsApi({ type, cardList, afterSales }) {
+export async function bulkCreateCardsApi({ type, cardList, afterSales, teamType }) {
   return request('foradd', {
     type,
     CardList: cardList,
     AfterSales: afterSales,
+    TeamType: teamType,
   });
 }

@@ -13,6 +13,7 @@ export const BiaogeName = [
       { key: 'id', label: 'ID', class: '', type: 'Number', readOnly: true },
       { key: 'TeamCard', label: '兑换卡密', class: '', type: 'Text' },
       { key: 'TeamCardState', label: '使用状态', class: '', type: 'Select' },
+      { key: 'TeamType', label: '卡密类型', class: '', type: 'Select', optionsKey: 'TeamType' },
       { key: 'AfterSales', label: '售后时长(天)', class: '', type: 'Number' },
       { key: 'AddTime', label: '添加时间', class: '', type: 'Datetime', readOnly: true },
       { key: 'UpdTime', label: '使用时间', class: '', type: 'Datetime', optional: true },

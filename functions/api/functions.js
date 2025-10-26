@@ -129,7 +129,7 @@ async function getlist(request,db) {
 
 //批量添加方法
 async function foradd(request,db) {
-    const {CardList = [],type,AfterSales=0} = request;
+    const {CardList = [],type,AfterSales=0,TeamType='Team'} = request;
     if(CardList.length < 1 ) return json({ ok: false, msg: "当前页面不存在" }, 404);
     const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
     let SqlName = '';
@@ -153,11 +153,12 @@ async function foradd(request,db) {
         return {
           TeamCard: index,
           TeamCardState: "o1",
+          TeamType: TeamType,
           AfterSales:AfterSales,
           AddTime: chinaTime,
         };
       });
-       columns = ["TeamCard", "TeamCardState", "AfterSales", "AddTime",];
+       columns = ["TeamCard", "TeamCardState", "TeamType", "AfterSales", "AddTime",];
     }
     
     try {
@@ -360,4 +361,3 @@ export async function GetTeamApi(data={},env){
     return json({ ok: false, msg: "邀请失败[未知原因[203]",data:error }, 200);
   }
 }
-

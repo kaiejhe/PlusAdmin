@@ -306,6 +306,24 @@
                           />
                         </div>
                         <div
+                          v-if="config.bulkType === 'Team'"
+                          class="space-y-2"
+                        >
+                          <Label for="bulk-team-type">Card Type</Label>
+                          <select
+                            id="bulk-team-type"
+                            v-model="bulkForm.teamType"
+                            class="block w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                            <option
+                              v-for="option in STATUS_OPTIONS.TeamType || []"
+                              :key="option.value"
+                              :value="option.value"
+                            >
+                              {{ option.label }}
+                            </option>
+                          </select>
+                        </div>
+                        <div
                           v-if="config.bulkRequiresAfterSales"
                           class="space-y-2 sm:col-span-2"
                         >
@@ -447,6 +465,7 @@ const bulkForm = reactive({
   quantity: 10,
   manualInput: '',
   afterSales: 0,
+  teamType: 'Team',
 });
 
 const config = computed(() => RESOURCE_CONFIG[props.resourceKey] || null);
@@ -873,6 +892,9 @@ function resetBulkForm() {
   bulkForm.quantity = 10;
   bulkForm.manualInput = '';
   bulkForm.afterSales = config.value?.bulkRequiresAfterSales ? 30 : 0;
+  bulkForm.teamType = config.value?.bulkType === 'Team'
+    ? (STATUS_OPTIONS.TeamType ? STATUS_OPTIONS.TeamType[0]?.value || 'Team' : 'Team')
+    : bulkForm.teamType;
 }
 
 function openBulkModal() {
@@ -927,6 +949,7 @@ async function submitBulk() {
       type: config.value.bulkType,
       cardList: cards,
       afterSales: afterSalesValue,
+      teamType: config.value.bulkType === 'Team' ? bulkForm.teamType : undefined,
     });
 
     if (!response?.ok) {

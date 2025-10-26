@@ -4,6 +4,11 @@ export const STATUS_OPTIONS = {
     { label: '已使用', value: 'o2' },
     { label: '已失效', value: 'o3' },
   ],
+  TeamType: [
+    { label: 'Team Code', value: 'Team' },
+    { label: 'Plus Account', value: 'Plus' },
+    { label: 'Plus iOS', value: 'PlusIOS' },
+  ],
   TeamTokenState: [
     { label: '启用', value: 'o1' },
     { label: '停用', value: 'o2' },
@@ -33,13 +38,15 @@ export const RESOURCE_CONFIG = {
     searchFields: [
       { field: 'TeamCard', label: '兑换卡密', type: 'text', placeholder: '输入完整或部分卡密' },
       { field: 'TeamCardState', label: '状态', type: 'select', optionsKey: 'TeamCardState' },
+      { field: 'TeamType', label: 'Card Type', type: 'select', optionsKey: 'TeamType' },
     ],
-    editableFields: ['TeamCard', 'TeamCardState', 'AfterSales'],
+    editableFields: ['TeamCard', 'TeamType', 'TeamCardState', 'AfterSales'],
     enableBulkCreate: true,
     bulkType: 'Team',
     bulkRequiresAfterSales: true,
     generatePrefix: 'TEAM',
     defaults: {
+      TeamType: 'Team',
       TeamCardState: 'o1',
       AfterSales: 0,
     },
