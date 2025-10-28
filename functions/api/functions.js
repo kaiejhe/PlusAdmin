@@ -278,11 +278,8 @@ export async function Card(request, db){
   let Order = {}
   .bind(Card).first();
   if(CardRes){
-    if(CardRes.TeamType==='Team'){
-      Order = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
-    }else if(CardRes.TeamType==='Plus'){
-      Order = await db.prepare("SELECT * FROM  PlusEmail WHERE TeamCard = ?").bind(Card).first();
-    }
+    
+    Order = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
     return json({ ok: true, msg: "验证成功",data:{Card:CardRes,Order:Order}}, 200);
   }else{
     return json({ ok: false, msg: "卡密不存在" }, 200);
