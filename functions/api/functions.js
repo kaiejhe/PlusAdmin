@@ -369,7 +369,7 @@ export async function GetTeamApi(data={},env){
 
 
 //前端调用方法->兑换码验证-获取Plus成品帐号:
-export async function GetTeamApi(data={},env){
+export async function GetPlusApi(data={},env){
   const db = env.TokenD1
   const {Card} = data
   if(!Card) return json({ ok: false, msg: "当前页面不存在" }, 200);
