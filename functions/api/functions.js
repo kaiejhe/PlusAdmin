@@ -274,11 +274,9 @@ export async function AdminToken(request, db){
 //TeamCard有效性检测
 export async function Card(request, db){
   const { Card } = request;
-  const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?")
+  const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?").bind(Card).first();
   let Order = {}
-  .bind(Card).first();
   if(CardRes){
-    
     Order = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
     return json({ ok: true, msg: "验证成功",data:{Card:CardRes,Order:Order}}, 200);
   }else{
