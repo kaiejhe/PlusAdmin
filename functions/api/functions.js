@@ -274,9 +274,14 @@ export async function AdminToken(request, db){
 export async function Card(request, db){
   const { Card } = request;
   const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?")
+  let Order = {}
   .bind(Card).first();
   if(CardRes){
-    const Order = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
+    if(CardRes.TeamType==='Team'){
+      Order = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
+    }else if(CardRes.TeamType==='Plus'){
+      Order = await db.prepare("SELECT * FROM  PlusEmail WHERE TeamCard = ?").bind(Card).first();
+    }
     return json({ ok: true, msg: "验证成功",data:{Card:CardRes,Order:Order}}, 200);
   }else{
     return json({ ok: false, msg: "卡密不存在" }, 200);
@@ -359,5 +364,28 @@ export async function GetTeamApi(data={},env){
     }
   } catch (error) { //发起团队邀请出错啦
     return json({ ok: false, msg: "邀请失败[未知原因[203]",data:error }, 200);
+  }
+}
+
+
+//前端调用方法->兑换码验证-获取Plus成品帐号:
+export async function GetTeamApi(data={},env){
+  const db = env.TokenD1
+  const {Card} = data
+  if(!Card) return json({ ok: false, msg: "当前页面不存在" }, 200);
+  const PlusCard = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ? AND TeamType = 'Plus'").bind(Card).first()
+  if(!PlusCard) return json({ ok: false, msg: "Plus兑换码不存在" }, 200);
+  const PlusEmail = await db.prepare("SELECT * FROM  PlusEmail WHERE PlusState = ?").bind('o1').first()
+  if(!PlusCard) return json({ ok: false, msg: "Plus库存不足,请联系客服补充库存。" }, 200);
+  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+  const stmts = [
+    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ?").bind('o2',chinaTime),
+    db.prepare("UPDATE PlusEmail SET PlusState = ?,UpdTime = ?,PlusCard = ? WHERE id = ? AND TeamCardState = 'o1'").bind("o2",chinaTime,Card,PlusEmail.id)
+  ]
+  try {
+    await db.batch(stmts);
+    return json({ ok: false, msg: "提取成功" }, 200);
+  } catch (error) {
+    return json({ ok: false, msg: "提取失败" }, 200);
   }
 }

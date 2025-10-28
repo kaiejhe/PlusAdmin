@@ -7,32 +7,32 @@ const ResourcePage = () => import('@/pages/resource/ResourcePage.vue');
 
 const routes = [
   {
-    path: '/',
-    redirect: '/login',
+    path: "/",
+    redirect: "/login",
   },
   {
-    path: '/login',
-    name: 'login',
+    path: "/login",
+    name: "login",
     component: LoginPage,
     meta: { public: true },
   },
   {
-    path: '/dashboard',
+    path: "/dashboard",
     component: DashboardLayout,
     meta: { requiresAuth: true },
     children: [
-      { path: '', redirect: '/dashboard/TeamCard' },
+      { path: "", redirect: "/dashboard/TeamCard" },
       {
-        path: ':resourceKey',
-        name: 'resource',
+        path: ":resourceKey",
+        name: "resource",
         component: ResourcePage,
         props: (route) => ({ resourceKey: route.params.resourceKey }),
       },
     ],
   },
   {
-    path: '/:pathMatch(.*)*',
-    redirect: '/dashboard/TeamCard',
+    path: "/:pathMatch(.*)*",
+    redirect: "/dashboard/TeamCard",
   },
 ];
 
