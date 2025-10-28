@@ -27,6 +27,7 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'TeamCard'  && request.method === 'POST') return Card(data, db)
     if (msgoogle === 'TeamEmail'  && request.method === 'POST') return TeamEmail(data, env)
     if (msgoogle === 'GetTeamApi'  && request.method === 'POST') return GetTeamApi(data, env)
+    if (msgoogle === 'GetPlusApi'  && request.method === 'POST') return GetPlusApi(data, env)
     return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
