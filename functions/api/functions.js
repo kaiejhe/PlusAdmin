@@ -380,6 +380,8 @@ export async function GetPlusApi(data={},env){
   if(!Card) return json({ ok: false, msg: "当前页面不存在" }, 200);
   const PlusCard = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ? AND TeamType = 'Plus'").bind(Card).first()
   if(!PlusCard) return json({ ok: false, msg: "Plus兑换码不存在" }, 200);
+  if(PlusCard.TeamCardState==='o2') json({ ok: false, msg: "兑换码已使用！" }, 200);
+  if(PlusCard.TeamCardState==='o3') json({ ok: false, msg: "兑换码已锁定!" }, 200);
   const PlusEmail = await db.prepare("SELECT * FROM  PlusEmail WHERE PlusState = ?").bind('o1').first()
   if(!PlusEmail) return json({ ok: false, msg: "Plus库存不足,请联系客服补充库存。" }, 200);
   const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
