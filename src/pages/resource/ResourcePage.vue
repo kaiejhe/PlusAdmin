@@ -844,8 +844,8 @@ function applyResourceSpecificTransforms(payload) {
       throw new Error('请填写帐号 Token');
     }
     let accountToken = rawInput;
-    let accountEmail = (formModel.PlusEmail ?? '').trim() || editingRecord.value?.PlusEmail || '';
-    let accountId = (formModel.PlusUserID ?? '').trim() || editingRecord.value?.PlusUserID || '';
+    let accountEmail = editingRecord.value?.PlusEmail || '';
+    let accountId = editingRecord.value?.PlusUserID || '';
     if (rawInput.startsWith('{')) {
       let parsed;
       try {
@@ -859,7 +859,12 @@ function applyResourceSpecificTransforms(payload) {
       if (parsedToken) accountToken = parsedToken;
       if (parsedEmail) accountEmail = parsedEmail;
       if (parsedId) accountId = parsedId;
+    } else if (!editingRecord.value) {
+      throw new Error('帐号 Token 必须为 JSON，系统会自动解析邮箱与帐号 ID');
     }
+    accountToken = String(accountToken).trim();
+    accountEmail = accountEmail ? String(accountEmail).trim() : '';
+    accountId = accountId ? String(accountId).trim() : '';
     if (!accountToken) {
       throw new Error('无法获取帐号 Token，请确认内容有效');
     }

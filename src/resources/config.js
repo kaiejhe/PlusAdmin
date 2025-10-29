@@ -126,15 +126,14 @@ export const RESOURCE_CONFIG = {
       { field: 'PlusEmail', label: '帐号邮箱', type: 'text', placeholder: '支持模糊搜索' },
       { field: 'PlusState', label: '当前状态', type: 'select', optionsKey: 'PlusState' },
       { field: 'PlusCard', label: '绑定兑换码', type: 'text', placeholder: '输入完整或部分兑换码' },
+      { field: 'EmailTxt', label: '邮箱登录密钥', type: 'text', placeholder: '按密钥快速定位' },
     ],
     editableFields: [
-      'PlusEmail',
+      'PlusAccToken',
       'PlusPassword',
       'PlusState',
-      'PlusUserID',
-      'PlusAccToken',
       'AfterSales',
-      'PlusCard',
+      'EmailTxt',
     ],
     defaults: {
       PlusState: 'o1',
