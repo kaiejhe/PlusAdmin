@@ -23,6 +23,11 @@ export const STATUS_OPTIONS = {
     { label: '已使用', value: 'o2' },
     { label: '已失效', value: 'o3' },
   ],
+  PlusState: [
+    { label: '待使用', value: 'o1' },
+    { label: '已使用', value: 'o2' },
+    { label: '封禁中', value: 'o3' },
+  ],
   State: [
     { label: '待处理', value: 'o1' },
     { label: '已完成', value: 'o2' },
@@ -111,6 +116,29 @@ export const RESOURCE_CONFIG = {
     generatePrefix: 'PLUS',
     defaults: {
       PlusCardState: 'o1',
+    },
+  },
+  PlusEmail: {
+    title: 'Plus成品号管理',
+    description: '维护 Plus 成品帐号信息，支持解析 JSON 并同步帐号状态。',
+    table: 'PlusEmail',
+    searchFields: [
+      { field: 'PlusEmail', label: '帐号邮箱', type: 'text', placeholder: '支持模糊搜索' },
+      { field: 'PlusState', label: '当前状态', type: 'select', optionsKey: 'PlusState' },
+      { field: 'PlusCard', label: '绑定兑换码', type: 'text', placeholder: '输入完整或部分兑换码' },
+    ],
+    editableFields: [
+      'PlusEmail',
+      'PlusPassword',
+      'PlusState',
+      'PlusUserID',
+      'PlusAccToken',
+      'AfterSales',
+      'PlusCard',
+    ],
+    defaults: {
+      PlusState: 'o1',
+      AfterSales: 0,
     },
   },
   PlusOrder: {

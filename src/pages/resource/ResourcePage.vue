@@ -227,6 +227,12 @@
                         >
                           粘贴完整的团队密钥 JSON，系统会自动提取邮箱和团队编号。
                         </p>
+                        <p
+                          v-if="config.table === 'PlusEmail' && field.key === 'PlusAccToken'"
+                          class="text-xs text-gray-500"
+                        >
+                          支持直接粘贴帐号 JSON，系统会自动提取邮箱、帐号 ID 与 Token。
+                        </p>
                         <div
                           v-if="config.table === 'TeamToken' && field.key === 'AccToken' && teamTokenPreview"
                           class="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600"
@@ -237,6 +243,18 @@
                           <template v-else>
                             <div>解析邮箱：{{ teamTokenPreview.email || '未解析' }}</div>
                             <div>团队编号：{{ teamTokenPreview.teamId || '未解析' }}</div>
+                          </template>
+                        </div>
+                        <div
+                          v-if="config.table === 'PlusEmail' && field.key === 'PlusAccToken' && plusAccountPreview"
+                          class="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600"
+                        >
+                          <template v-if="plusAccountPreview.error">
+                            {{ plusAccountPreview.error }}
+                          </template>
+                          <template v-else>
+                            <div>帐号邮箱：{{ plusAccountPreview.email || '未解析' }}</div>
+                            <div>帐号ID：{{ plusAccountPreview.userId || '未解析' }}</div>
                           </template>
                         </div>
                       </div>
@@ -470,6 +488,7 @@ const bulkForm = reactive({
 
 const config = computed(() => RESOURCE_CONFIG[props.resourceKey] || null);
 const isTeamTokenResource = computed(() => config.value?.table === 'TeamToken');
+const isPlusEmailResource = computed(() => config.value?.table === 'PlusEmail');
 
 const teamTokenPreview = computed(() => {
   if (!isTeamTokenResource.value) return null;
@@ -484,6 +503,38 @@ const teamTokenPreview = computed(() => {
       teamId,
       token: typeof parsed?.accessToken === 'string' ? parsed.accessToken : '',
     };
+  } catch (error) {
+    return { error: 'JSON 解析失败，请检查格式' };
+  }
+});
+
+const plusAccountPreview = computed(() => {
+  if (!isPlusEmailResource.value) return null;
+  const raw = (formModel.PlusAccToken ?? '').trim();
+  if (!raw || !raw.startsWith('{')) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    const email =
+      typeof parsed?.user?.email === 'string'
+        ? parsed.user.email
+        : typeof parsed?.email === 'string'
+          ? parsed.email
+          : '';
+    const userId =
+      typeof parsed?.account?.id === 'string'
+        ? parsed.account.id
+        : typeof parsed?.accountId === 'string'
+          ? parsed.accountId
+          : typeof parsed?.user?.id === 'string'
+            ? parsed.user.id
+            : '';
+    const token =
+      typeof parsed?.accessToken === 'string'
+        ? parsed.accessToken
+        : typeof parsed?.token === 'string'
+          ? parsed.token
+          : '';
+    return { email, userId, token };
   } catch (error) {
     return { error: 'JSON 解析失败，请检查格式' };
   }
@@ -752,34 +803,76 @@ function normalizeFieldValue(field, value) {
 }
 
 function applyResourceSpecificTransforms(payload) {
-  if (config.value?.table !== 'TeamToken') return;
-  const rawInput = (formModel.AccToken ?? '').trim();
-  if (!rawInput) {
-    throw new Error('请填写团队密钥');
-  }
-  let accessToken = rawInput;
-  let teamEmail = editingRecord.value?.TeamEmail ?? '';
-  let teamId = editingRecord.value?.TeamID ?? '';
-  if (rawInput.startsWith('{')) {
-    let parsed;
-    try {
-      parsed = JSON.parse(rawInput);
-    } catch (error) {
-      throw new Error('团队密钥格式错误，请粘贴完整的 JSON 文本');
+  const table = config.value?.table;
+  if (table === 'TeamToken') {
+    const rawInput = (formModel.AccToken ?? '').trim();
+    if (!rawInput) {
+      throw new Error('请填写团队密钥');
     }
-    accessToken = String(parsed?.accessToken ?? '').trim();
-    teamEmail = String(parsed?.user?.email ?? '').trim();
-    teamId = String(parsed?.account?.id ?? '').trim();
+    let accessToken = rawInput;
+    let teamEmail = (formModel.TeamEmail ?? '').trim() || editingRecord.value?.TeamEmail || '';
+    let teamId = (formModel.TeamID ?? '').trim() || editingRecord.value?.TeamID || '';
+    if (rawInput.startsWith('{')) {
+      let parsed;
+      try {
+        parsed = JSON.parse(rawInput);
+      } catch (error) {
+        throw new Error('团队密钥格式错误，请粘贴完整的 JSON 文本');
+      }
+      const parsedToken = String(parsed?.accessToken ?? '').trim();
+      const parsedEmail = String(parsed?.user?.email ?? '').trim();
+      const parsedTeamId = String(parsed?.account?.id ?? '').trim();
+      if (parsedToken) accessToken = parsedToken;
+      if (parsedEmail) teamEmail = parsedEmail;
+      if (parsedTeamId) teamId = parsedTeamId;
+    }
     if (!accessToken) {
-      throw new Error('团队密钥 JSON 中缺少 accessToken');
+      throw new Error('无法获取 accessToken，请检查密钥内容');
     }
+    if (!teamEmail || !teamId) {
+      throw new Error('无法解析团队邮箱或团队编号，请确认信息正确');
+    }
+    payload.AccToken = accessToken;
+    payload.TeamEmail = teamEmail;
+    payload.TeamID = teamId;
+    return;
   }
-  if (!teamEmail || !teamId) {
-    throw new Error('无法解析团队密钥中的邮箱或团队编号，请确认内容正确');
+
+  if (table === 'PlusEmail') {
+    const rawInput = (formModel.PlusAccToken ?? '').trim();
+    if (!rawInput) {
+      throw new Error('请填写帐号 Token');
+    }
+    let accountToken = rawInput;
+    let accountEmail = (formModel.PlusEmail ?? '').trim() || editingRecord.value?.PlusEmail || '';
+    let accountId = (formModel.PlusUserID ?? '').trim() || editingRecord.value?.PlusUserID || '';
+    if (rawInput.startsWith('{')) {
+      let parsed;
+      try {
+        parsed = JSON.parse(rawInput);
+      } catch (error) {
+        throw new Error('帐号 Token 格式错误，请粘贴合法的 JSON 文本');
+      }
+      const parsedToken = String(parsed?.accessToken ?? parsed?.token ?? '').trim();
+      const parsedEmail = String(parsed?.user?.email ?? parsed?.email ?? '').trim();
+      const parsedId = String(parsed?.account?.id ?? parsed?.accountId ?? parsed?.user?.id ?? '').trim();
+      if (parsedToken) accountToken = parsedToken;
+      if (parsedEmail) accountEmail = parsedEmail;
+      if (parsedId) accountId = parsedId;
+    }
+    if (!accountToken) {
+      throw new Error('无法获取帐号 Token，请确认内容有效');
+    }
+    if (!accountEmail) {
+      throw new Error('无法获取帐号邮箱，请在表单中补全或提供 JSON');
+    }
+    if (!accountId) {
+      throw new Error('无法获取帐号 ID，请在表单中补全或提供 JSON');
+    }
+    payload.PlusAccToken = accountToken;
+    payload.PlusEmail = accountEmail;
+    payload.PlusUserID = accountId;
   }
-  payload.AccToken = accessToken;
-  payload.TeamEmail = teamEmail;
-  payload.TeamID = teamId;
 }
 
 function appendTimestamps(payload) {

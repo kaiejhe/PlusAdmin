@@ -1,5 +1,6 @@
 export const HomeCaidan = [
   { label: 'Plus卡密管理', key: 'PlusCard', path: '/dashboard/PlusCard' },
+  { label: 'Plus成品号管理', key: 'PlusEmail', path: '/dashboard/PlusEmail' },
   { label: 'Plus订阅管理', key: 'PlusOrder', path: '/dashboard/PlusOrder' },
   { label: 'Team卡密管理', key: 'TeamCard', path: '/dashboard/TeamCard' },
   { label: 'Team团队管理', key: 'TeamToken', path: '/dashboard/TeamToken' },
@@ -54,6 +55,21 @@ export const BiaogeName = [
       { key: 'id', label: 'ID', class: '', type: 'Number', readOnly: true },
       { key: 'PlusCard', label: '订阅卡密', class: '', type: 'Text' },
       { key: 'PlusCardState', label: '使用状态', class: '', type: 'Select' },
+      { key: 'AddTime', label: '添加时间', class: '', type: 'Datetime', readOnly: true },
+      { key: 'UpdTime', label: '使用时间', class: '', type: 'Datetime', optional: true },
+    ],
+  },
+  {
+    key: 'PlusEmail',
+    Conten: [
+      { key: 'id', label: 'ID', class: '', type: 'Number', readOnly: true },
+      { key: 'PlusEmail', label: '帐号邮箱', class: '', type: 'Text' },
+      { key: 'PlusPassword', label: '帐号密码', class: '', type: 'Text' },
+      { key: 'PlusState', label: '当前状态', class: '', type: 'Select' },
+      { key: 'PlusUserID', label: '帐号ID', class: '', type: 'Text' },
+      { key: 'PlusAccToken', label: '帐号Token', class: 'max-w-[12rem] truncate text-gray-500', type: 'TextArea', previewLength: 24 },
+      { key: 'AfterSales', label: '售后时间(天)', class: '', type: 'Number', optional: true },
+      { key: 'PlusCard', label: '兑换码', class: '', type: 'Text', optional: true },
       { key: 'AddTime', label: '添加时间', class: '', type: 'Datetime', readOnly: true },
       { key: 'UpdTime', label: '使用时间', class: '', type: 'Datetime', optional: true },
     ],

@@ -384,13 +384,13 @@ export async function GetPlusApi(data={},env){
   if(!PlusEmail) return json({ ok: false, msg: "Plus库存不足,请联系客服补充库存。" }, 200);
   const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
   const stmts = [
-    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ?").bind('o2',chinaTime),
-    db.prepare("UPDATE PlusEmail SET PlusState = ?,UpdTime = ?,PlusCard = ? WHERE id = ? AND TeamCardState = 'o1'").bind("o2",chinaTime,Card,PlusEmail.id)
+    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind('o2',chinaTime,Card),
+    db.prepare("UPDATE PlusEmail SET PlusState = ?,UpdTime = ?,PlusCard = ? WHERE id = ? AND PlusState = 'o1'").bind("o2",chinaTime,Card,PlusEmail.id)
   ]
   try {
     await db.batch(stmts);
     const indata = await db.prepare("SELECT * FROM  PlusEmail WHERE id = ?").bind(PlusEmail.id).first();
-    return json({ ok: false, msg: "提取成功",data: indata}, 200);
+    return json({ ok: true, msg: "提取成功",data: indata}, 200);
   } catch (error) {
     return json({ ok: false, msg: "提取失败" }, 200);
   }
