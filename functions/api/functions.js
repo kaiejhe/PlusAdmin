@@ -380,7 +380,7 @@ export async function GetPlusApi(data={},env){
   if(!Card) return json({ ok: false, msg: "当前页面不存在" }, 200);
   const PlusCard = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ? AND TeamType = 'Plus'").bind(Card).first()
   if(!PlusCard) return json({ ok: false, msg: "Plus兑换码不存在" }, 200);
-  if(PlusCard.TeamCardState!=='o2'){
+  if(PlusCard.TeamCardState!=='o1'){
       if(PlusCard.TeamCardState==='o2') return json({ ok: false, msg: "兑换码已使用！" }, 200);
       if(PlusCard.TeamCardState==='o3') return json({ ok: false, msg: "兑换码已锁定!" }, 200);
       return json({ ok: false, msg: "兑换码卡号异常!" }, 200);
