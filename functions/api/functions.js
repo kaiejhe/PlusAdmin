@@ -283,6 +283,9 @@ export async function Card(request, db){
     if(CardRes.TeamType==='Plus'){
       Order = await db.prepare("SELECT * FROM  PlusEmail WHERE PlusCard = ?").bind(Card).first();
     }
+    if(CardRes.TeamType==='PlusIOS'){
+      Order = await db.prepare("SELECT * FROM  PlusOrder WHERE PlusCard = ?").bind(Card).first();
+    }
     return json({ ok: true, msg: "验证成功",data:{Card:CardRes,Order:Order}}, 200);
     
   }else{
