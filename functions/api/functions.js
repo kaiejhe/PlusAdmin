@@ -389,7 +389,8 @@ export async function GetPlusApi(data={},env){
   ]
   try {
     await db.batch(stmts);
-    return json({ ok: false, msg: "提取成功" }, 200);
+    const indata = await db.prepare("SELECT * FROM  PlusEmail WHERE id = ?").bind(PlusEmail.id).first();
+    return json({ ok: false, msg: "提取成功",data: indata}, 200);
   } catch (error) {
     return json({ ok: false, msg: "提取失败" }, 200);
   }
