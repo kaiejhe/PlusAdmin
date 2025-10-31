@@ -40,6 +40,7 @@ export const RESOURCE_CONFIG = {
     title: 'Team卡密管理',
     description: '管理 Team 产品卡密，支持查询、批量导入及状态维护。',
     table: 'TeamCard',
+    defaultSortField: 'AddTime',
     searchFields: [
       { field: 'TeamCard', label: '兑换卡密', type: 'text', placeholder: '输入完整或部分卡密' },
       { field: 'TeamCardState', label: '状态', type: 'select', optionsKey: 'TeamCardState' },
@@ -60,6 +61,7 @@ export const RESOURCE_CONFIG = {
     title: 'Team团队管理',
     description: '维护 Team 团队 Token 信息，支持独立新增与配额调整。',
     table: 'TeamToken',
+    defaultSortField: 'AddTime',
     searchFields: [
       { field: 'TeamEmail', label: '团队邮箱', type: 'text' },
       { field: 'TeamID', label: '团队编号', type: 'text' },
@@ -83,6 +85,7 @@ export const RESOURCE_CONFIG = {
     title: 'Team订单管理',
     description: '查看与维护 Team 订单，可手动创建测试数据。',
     table: 'TeamOrder',
+    defaultSortField: 'AddTime',
     searchFields: [
       { field: 'OrderTeamID', label: '团队编号', type: 'text' },
       { field: 'Order_us_Email', label: '进团邮箱', type: 'text' },
@@ -106,6 +109,7 @@ export const RESOURCE_CONFIG = {
     title: 'Plus卡密管理',
     description: '管理 Plus 订阅卡密，支持批量导入和状态修改。',
     table: 'PlusCard',
+    defaultSortField: 'AddTime',
     searchFields: [
       { field: 'PlusCard', label: '订阅卡密', type: 'text' },
       { field: 'PlusCardState', label: '状态', type: 'select', optionsKey: 'PlusCardState' },
@@ -122,6 +126,7 @@ export const RESOURCE_CONFIG = {
     title: 'Plus成品号管理',
     description: '维护 Plus 成品帐号信息，支持解析 JSON 并同步帐号状态。',
     table: 'PlusEmail',
+    defaultSortField: 'AddTime',
     searchFields: [
       { field: 'PlusEmail', label: '帐号邮箱', type: 'text', placeholder: '支持模糊搜索' },
       { field: 'PlusState', label: '当前状态', type: 'select', optionsKey: 'PlusState' },
@@ -144,6 +149,7 @@ export const RESOURCE_CONFIG = {
     title: 'Plus订阅管理',
     description: '手动维护 Plus 订阅订单，便于调试与运营。',
     table: 'PlusOrder',
+    defaultSortField: 'created_at',
     searchFields: [
       { field: 'Email', label: '订阅邮箱', type: 'text' },
       { field: 'usOrder', label: '订单号', type: 'text' },

@@ -23,8 +23,8 @@
     </Button>
     <Button v-if="config.enableBulkCreate" variant="outline" @click="openBulkModal">
       批量添加
-        </Button>
-        <Button @click="openCreateModal">新增</Button>
+    </Button>
+    <Button v-if="!isTeamCardResource" @click="openCreateModal">新增</Button>
       </div>
     </header>
 
@@ -308,12 +308,15 @@
                 <Card>
                   <CardHeader>
                     <CardTitle>批量添加 · {{ config.title }}</CardTitle>
-                    <CardDescription>支持自动生成或手动粘贴卡密列表，每行一条。</CardDescription>
+                    <CardDescription>{{ bulkDialogDescription }}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <form class="space-y-4" @submit.prevent="submitBulk">
                       <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="space-y-2">
+                        <div
+                          v-if="!isTeamCardResource"
+                          class="space-y-2"
+                        >
                           <Label for="bulk-prefix">生成前缀</Label>
                           <Input
                             id="bulk-prefix"
@@ -321,7 +324,9 @@
                             placeholder="例如 TEAM"
                           />
                         </div>
-                        <div class="space-y-2">
+                        <div
+                          :class="['space-y-2', isTeamCardResource ? 'sm:col-span-2' : '']"
+                        >
                           <Label for="bulk-quantity">生成数量</Label>
                           <Input
                             id="bulk-quantity"
@@ -362,14 +367,32 @@
                         </div>
                       </div>
                       <div class="space-y-2">
-                        <Label for="bulk-manual">手动粘贴卡密（可选）</Label>
+                        <div class="flex items-center justify-between">
+                          <Label for="bulk-manual">卡密列表</Label>
+                          <Button
+                            v-if="isTeamCardResource"
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            :disabled="saving"
+                            @click="generateTeamCards"
+                          >
+                            生成卡密
+                          </Button>
+                        </div>
                         <textarea
                           id="bulk-manual"
                           v-model="bulkForm.manualInput"
                           rows="6"
-                          placeholder="每行一个卡密，留空时根据前缀自动生成"
+                          :placeholder="isTeamCardResource ? '点击上方按钮后将自动生成卡密，也可手动调整，每行一条' : '每行一个卡密，留空时根据前缀自动生成'"
                           class="block w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         />
+                        <p
+                          v-if="isTeamCardResource"
+                          class="text-xs text-gray-500"
+                        >
+                          先生成卡密并核对内容，无需填写前缀，系统会自动补齐格式。
+                        </p>
                       </div>
 
                       <div class="flex justify-end gap-2 pt-2">
@@ -496,6 +519,14 @@ const bulkForm = reactive({
 const config = computed(() => RESOURCE_CONFIG[props.resourceKey] || null);
 const isTeamTokenResource = computed(() => config.value?.table === 'TeamToken');
 const isPlusEmailResource = computed(() => config.value?.table === 'PlusEmail');
+const isTeamCardResource = computed(() => config.value?.table === 'TeamCard');
+const bulkDialogDescription = computed(() => {
+  if (!config.value) return '';
+  if (isTeamCardResource.value) {
+    return '设置数量后点击生成按钮，系统会自动填充卡密列表（可在提交前调整，每行一条）。';
+  }
+  return '支持自动生成或手动粘贴卡密列表，每行一条。';
+});
 
 const teamTokenPreview = computed(() => {
   if (!isTeamTokenResource.value) return null;
@@ -637,13 +668,39 @@ function getStatusLabel(fieldKey, value) {
   return match ? match.label : null;
 }
 
+function normalizeTimestampToMilliseconds(numeric) {
+  const candidates = [
+    numeric,
+    numeric * 1000,
+    numeric / 1000,
+    numeric / 1_000_000,
+  ]
+    .map((value) => Math.round(value))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  if (!candidates.length) {
+    return Math.round(numeric);
+  }
+  const now = Date.now();
+  let best = candidates[0];
+  let bestDiff = Math.abs(best - now);
+  for (let index = 1; index < candidates.length; index += 1) {
+    const candidate = candidates[index];
+    const diff = Math.abs(candidate - now);
+    if (diff < bestDiff) {
+      best = candidate;
+      bestDiff = diff;
+    }
+  }
+  return best;
+}
+
 function formatTimestamp(value) {
   if (value === null || value === undefined || value === '') return '-';
   const numeric = Number(value);
   if (!Number.isFinite(numeric) || numeric === 0) {
     return String(value);
   }
-  const timestamp = numeric < 1_000_000_000_000 ? numeric * 1000 : numeric;
+  const timestamp = normalizeTimestampToMilliseconds(numeric);
   return GetTime(timestamp);
 }
 
@@ -678,6 +735,63 @@ function buildFilters() {
   return filters;
 }
 
+function getSortFields() {
+  const fields = [
+    config.value?.defaultSortField,
+    'created_at',
+    'createdAt',
+    'created_time',
+    'createdTime',
+    'AddTime',
+    'AddDatetime',
+    'AddDate',
+    'Add_at',
+    'Addtime',
+    'Add_date',
+  ].filter(Boolean);
+  fields.push('id');
+  return Array.from(new Set(fields));
+}
+
+function normalizeSortValue(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) {
+    if (Math.abs(numeric) > 1e8) {
+      return normalizeTimestampToMilliseconds(numeric);
+    }
+    return numeric;
+  }
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+function compareRecordsByFields(a, b, fields) {
+  for (const field of fields) {
+    const valueA = normalizeSortValue(a?.[field]);
+    const valueB = normalizeSortValue(b?.[field]);
+    if (valueA === null && valueB === null) {
+      continue;
+    }
+    if (valueA === null) {
+      return 1;
+    }
+    if (valueB === null) {
+      return -1;
+    }
+    const diff = valueB - valueA;
+    if (diff !== 0) {
+      return diff;
+    }
+  }
+  return 0;
+}
+
 async function fetchData() {
   if (!config.value) return;
   loading.value = true;
@@ -694,7 +808,10 @@ async function fetchData() {
     if (!response?.ok) {
       throw new Error(response?.msg || '查询失败');
     }
-    rows.value = (response.data || []).map((item, index) => ({
+    const sortFields = getSortFields();
+    const rawRows = Array.isArray(response.data) ? [...response.data] : [];
+    rawRows.sort((a, b) => compareRecordsByFields(a, b, sortFields));
+    rows.value = rawRows.map((item, index) => ({
       _rowKey: `${index}-${item.id ?? ''}`,
       ...item,
     }));
@@ -773,7 +890,7 @@ function prepareFormModel(record) {
 }
 
 function openCreateModal() {
-  if (!config.value) return;
+  if (!config.value || isTeamCardResource.value) return;
   editingRecord.value = null;
   prepareFormModel(null);
   showFormModal.value = true;
@@ -1045,7 +1162,7 @@ async function deleteRecord(record) {
 }
 
 function resetBulkForm() {
-  bulkForm.prefix = config.value?.generatePrefix || '';
+  bulkForm.prefix = isTeamCardResource.value ? '' : (config.value?.generatePrefix || '');
   bulkForm.quantity = 10;
   bulkForm.manualInput = '';
   bulkForm.afterSales = config.value?.bulkRequiresAfterSales ? 30 : 0;
@@ -1065,6 +1182,31 @@ function closeBulkModal(force = false) {
   showBulkModal.value = false;
 }
 
+function buildTeamCardPrefix() {
+  const base = String(config.value?.generatePrefix || 'TEAM')
+    .replace(/[^A-Za-z0-9]/g, '')
+    .toUpperCase() || 'TEAM';
+  const suffix = Date.now().toString(36).slice(-4).toUpperCase();
+  return `${base}${suffix}`;
+}
+
+function generateTeamCards() {
+  if (!isTeamCardResource.value) return;
+  clearFeedback();
+  try {
+    const quantity = Number(bulkForm.quantity);
+    if (!Number.isFinite(quantity) || quantity < 1) {
+      throw new Error('请填写正确的生成数量');
+    }
+    const prefix = buildTeamCardPrefix();
+    const cards = RandomGroup(quantity, prefix);
+    bulkForm.manualInput = cards.join('\n');
+    setFeedback('default', `已生成 ${cards.length} 条卡密，提交前可按需调整。`);
+  } catch (error) {
+    setFeedback('error', error.message || '生成卡密失败');
+  }
+}
+
 function buildBulkCards() {
   const manualCards = bulkForm.manualInput
     .split(/\r?\n/)
@@ -1072,6 +1214,9 @@ function buildBulkCards() {
     .filter(Boolean);
   if (manualCards.length) {
     return Array.from(new Set(manualCards));
+  }
+  if (isTeamCardResource.value) {
+    throw new Error('请先生成卡密或手动填写卡密列表');
   }
   const prefix = bulkForm.prefix.trim() || config.value?.generatePrefix || 'CARD';
   const quantity = Number(bulkForm.quantity);
