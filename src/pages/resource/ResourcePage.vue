@@ -211,6 +211,7 @@
                             :id="`form-${field.key}`"
                             v-model="formModel[field.key]"
                             rows="4"
+                            :readonly="config.table === 'PlusEmail' && field.key === 'EmailTxt' && !isEditing"
                             class="block w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                           />
                         </template>
@@ -232,6 +233,12 @@
                           class="text-xs text-gray-500"
                         >
                           支持直接粘贴帐号 JSON，系统会自动提取邮箱、帐号 ID 与 Token。
+                        </p>
+                        <p
+                          v-if="config.table === 'PlusEmail' && field.key === 'EmailTxt' && !isEditing"
+                          class="text-xs text-gray-500"
+                        >
+                          新增时系统会自动获取邮箱登录密钥，无需手动填写。
                         </p>
                         <div
                           v-if="config.table === 'TeamToken' && field.key === 'AccToken' && teamTokenPreview"
@@ -802,7 +809,7 @@ function normalizeFieldValue(field, value) {
   return value ?? '';
 }
 
-function applyResourceSpecificTransforms(payload) {
+async function applyResourceSpecificTransforms(payload) {
   const table = config.value?.table;
   if (table === 'TeamToken') {
     const rawInput = (formModel.AccToken ?? '').trim();
@@ -877,6 +884,11 @@ function applyResourceSpecificTransforms(payload) {
     payload.PlusAccToken = accountToken;
     payload.PlusEmail = accountEmail;
     payload.PlusUserID = accountId;
+    if (!isEditing.value) {
+      const emailKey = await requestEmailLoginKey(accountEmail);
+      payload.EmailTxt = emailKey;
+      formModel.EmailTxt = emailKey;
+    }
   }
 }
 
@@ -897,6 +909,46 @@ function appendTimestamps(payload) {
   }
 }
 
+async function requestEmailLoginKey(email) {
+  const endpoint = 'https://eamilapi.saas-176001.workers.dev/create';
+  if (!email) {
+    throw new Error('无法获取帐号邮箱，无法生成邮箱登录密钥');
+  }
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  } catch (error) {
+    throw new Error('请求邮箱登录密钥接口失败，请检查网络后重试');
+  }
+  const rawBody = await response.text();
+  let parsed = null;
+  if (rawBody) {
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch (error) {
+      parsed = null;
+    }
+  }
+  if (!response.ok) {
+    const message = parsed?.msg || response.statusText || '服务异常';
+    throw new Error(`邮箱登录密钥接口请求失败：${message}`);
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('邮箱登录密钥接口返回异常，无法解析数据');
+  }
+  if (!parsed.ok) {
+    throw new Error(parsed.msg ? `邮箱登录密钥接口返回错误：${parsed.msg}` : '邮箱登录密钥接口未能成功返回密钥');
+  }
+  if (!parsed.key) {
+    throw new Error('邮箱登录密钥接口未返回密钥，请稍后重试');
+  }
+  return String(parsed.key);
+}
+
 async function submitForm() {
   if (!config.value) return;
   saving.value = true;
@@ -906,6 +958,13 @@ async function submitForm() {
   try {
     const payload = {};
     formFields.value.forEach((field) => {
+      const skipEmailKeyAutoFill =
+        config.value?.table === 'PlusEmail' &&
+        field.key === 'EmailTxt' &&
+        !isEditing.value;
+      if (skipEmailKeyAutoFill) {
+        return;
+      }
       const raw = formModel[field.key];
       if (
         (raw === '' || raw === null || raw === undefined) &&
@@ -917,7 +976,7 @@ async function submitForm() {
       payload[field.key] = normalizeFieldValue(field, raw);
     });
 
-    applyResourceSpecificTransforms(payload);
+    await applyResourceSpecificTransforms(payload);
     appendTimestamps(payload);
 
     let response;
