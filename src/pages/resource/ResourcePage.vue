@@ -489,10 +489,14 @@ const props = defineProps({
 });
 
 const PAGE_SIZE = 10;
+const API_PAGE_SIZE = 200;
+const MAX_FETCH_PAGES = 50;
+const TEAM_CARD_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const page = ref(1);
 const total = ref(0);
 const rows = ref([]);
+const allRows = ref([]);
 const loading = ref(false);
 const saving = ref(false);
 const selectedIds = ref([]);
@@ -647,6 +651,12 @@ function clearSelection() {
   selectedIds.value = [];
 }
 
+function updateVisibleRows() {
+  const start = (page.value - 1) * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+  rows.value = allRows.value.slice(start, end);
+}
+
 function resetSearchModel() {
   clearFeedback();
   Object.keys(searchModel).forEach((key) => {
@@ -735,6 +745,62 @@ function buildFilters() {
   return filters;
 }
 
+async function fetchAllPages({ table, filters }) {
+  const pageSize = Math.max(API_PAGE_SIZE, PAGE_SIZE);
+  const collected = [];
+  const seenKeys = new Set();
+  let totalCount = 0;
+  let currentPage = 1;
+
+  while (true) {
+    const response = await fetchListApi({
+      table,
+      filters,
+      page: currentPage,
+      pageSize,
+    });
+    if (!response?.ok) {
+      throw new Error(response?.msg || '查询失败');
+    }
+    if (currentPage === 1) {
+      totalCount = Number(response.total) || 0;
+    }
+    const chunk = Array.isArray(response.data) ? response.data : [];
+    chunk.forEach((item, index) => {
+      const key =
+        item?.id ??
+        item?.TeamCard ??
+        item?.PlusCard ??
+        item?.PlusEmail ??
+        item?.Email ??
+        item?.Card ??
+        `page${currentPage}-row${index}-${collected.length}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        collected.push(item);
+      }
+    });
+    if (chunk.length === 0) {
+      break;
+    }
+    if (chunk.length < pageSize) {
+      break;
+    }
+    if (totalCount && collected.length >= totalCount) {
+      break;
+    }
+    if (currentPage >= MAX_FETCH_PAGES) {
+      break;
+    }
+    currentPage += 1;
+  }
+
+  if (!totalCount) {
+    totalCount = collected.length;
+  }
+  return { records: collected, totalCount };
+}
+
 function getSortFields() {
   const fields = [
     config.value?.defaultSortField,
@@ -799,24 +865,34 @@ async function fetchData() {
   clearSelection();
   try {
     const filters = buildFilters();
-    const response = await fetchListApi({
+    const effectiveFilters =
+      Object.keys(filters).length ? filters : undefined;
+    const { records, totalCount } = await fetchAllPages({
       table: config.value.table,
-      filters: Object.keys(filters).length ? filters : undefined,
-      page: page.value,
-      pageSize: PAGE_SIZE,
+      filters: effectiveFilters,
     });
-    if (!response?.ok) {
-      throw new Error(response?.msg || '查询失败');
-    }
     const sortFields = getSortFields();
-    const rawRows = Array.isArray(response.data) ? [...response.data] : [];
-    rawRows.sort((a, b) => compareRecordsByFields(a, b, sortFields));
-    rows.value = rawRows.map((item, index) => ({
-      _rowKey: `${index}-${item.id ?? ''}`,
+    const sortedRows = Array.isArray(records) ? [...records] : [];
+    sortedRows.sort((a, b) => compareRecordsByFields(a, b, sortFields));
+    allRows.value = sortedRows.map((item, index) => ({
+      _rowKey: `${index}-${item?.id ?? ''}`,
       ...item,
     }));
-    total.value = Number(response.total) || 0;
+    total.value = allRows.value.length || totalCount || 0;
+    if (!allRows.value.length) {
+      rows.value = [];
+      page.value = 1;
+      return;
+    }
+    const maxAllowedPage = Math.max(1, Math.ceil(total.value / PAGE_SIZE));
+    if (page.value > maxAllowedPage) {
+      page.value = maxAllowedPage;
+    }
+    updateVisibleRows();
   } catch (error) {
+    allRows.value = [];
+    rows.value = [];
+    total.value = 0;
     setFeedback('error', error.message || '查询失败');
   } finally {
     loading.value = false;
@@ -838,7 +914,8 @@ function changePage(nextPage) {
     return;
   }
   page.value = nextPage;
-  fetchData();
+  clearSelection();
+  updateVisibleRows();
 }
 
 function refresh() {
@@ -1182,12 +1259,30 @@ function closeBulkModal(force = false) {
   showBulkModal.value = false;
 }
 
-function buildTeamCardPrefix() {
-  const base = String(config.value?.generatePrefix || 'TEAM')
-    .replace(/[^A-Za-z0-9]/g, '')
-    .toUpperCase() || 'TEAM';
-  const suffix = Date.now().toString(36).slice(-4).toUpperCase();
-  return `${base}${suffix}`;
+function createTeamCardSegment() {
+  let segment = '';
+  for (let index = 0; index < 4; index += 1) {
+    const randomIndex = Math.floor(Math.random() * TEAM_CARD_CHARSET.length);
+    segment += TEAM_CARD_CHARSET[randomIndex];
+  }
+  return segment;
+}
+
+function createTeamCardCode() {
+  return [
+    createTeamCardSegment(),
+    createTeamCardSegment(),
+    createTeamCardSegment(),
+    createTeamCardSegment(),
+  ].join('-');
+}
+
+function createTeamCardCodes(quantity) {
+  const codes = new Set();
+  while (codes.size < quantity) {
+    codes.add(createTeamCardCode());
+  }
+  return [...codes];
 }
 
 function generateTeamCards() {
@@ -1198,8 +1293,7 @@ function generateTeamCards() {
     if (!Number.isFinite(quantity) || quantity < 1) {
       throw new Error('请填写正确的生成数量');
     }
-    const prefix = buildTeamCardPrefix();
-    const cards = RandomGroup(quantity, prefix);
+    const cards = createTeamCardCodes(quantity);
     bulkForm.manualInput = cards.join('\n');
     setFeedback('default', `已生成 ${cards.length} 条卡密，提交前可按需调整。`);
   } catch (error) {

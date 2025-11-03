@@ -1,13 +1,12 @@
 // const API_BASE ="https://plusadmin.pages.dev/api/functions"
 const API_BASE = window.location.origin + '/api/functions'
 //批量生成订阅卡密
-export function RandomGroup(num = 1,Text){
+export function RandomGroup(num = 1, _prefix){
     const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const group = () => Array.from({ length: 4 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join('');
-    const make = () => `${Text}-${group()}-${group()}-${group()}`;
+    const make = () => `${group()}-${group()}-${group()}-${group()}`;
     const set = new Set();
     while (set.size < num) set.add(make());
-    console.log("2222", set)
     return [...set]
 }
 
