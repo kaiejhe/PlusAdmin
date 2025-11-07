@@ -413,5 +413,5 @@ export async function Disable(data={},env){
   const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
   await db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`)
       .bind(Email, 'o1', chinaTime).run()
-  return json({ ok: true, msg: "添加成功" }, 200);
+  return json({ ok: true, msg: "添加成功1" }, 200);
 }
