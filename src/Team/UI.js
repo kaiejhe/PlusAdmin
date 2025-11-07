@@ -90,7 +90,7 @@ export const BiaogeName = [
     ],
   },
   {
-    key: 'Disable',
+    key: 'disable',
     Conten: [
       { key: 'id', label: 'ID', class: '', type: 'Number', readOnly: true },
       { key: 'email', label: '邮箱地址', class: '', type: 'Text' },
