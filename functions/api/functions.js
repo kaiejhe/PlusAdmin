@@ -28,6 +28,7 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'TeamEmail'  && request.method === 'POST') return TeamEmail(data, env)
     if (msgoogle === 'GetTeamApi'  && request.method === 'POST') return GetTeamApi(data, env)
     if (msgoogle === 'GetPlusApi'  && request.method === 'POST') return GetPlusApi(data, env)
+    if (msgoogle === 'disable'  && request.method === 'POST') return Disable(data, env)
     return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
@@ -399,4 +400,18 @@ export async function GetPlusApi(data={},env){
   } catch (error) {
     return json({ ok: false, msg: "提取失败" }, 200);
   }
+}
+
+//查询被封邮箱
+export async function Disable(data={},env){
+  const db = env.TokenD1
+  const {Email} = data
+  if(!Email) return json({ ok: false, msg: "Email不能为空" }, 200);
+  //先查询已停用的团队
+  const TeaEmail = await db.prepare("SELECT * FROM  disable WHERE email = ?").bind(Email).first();
+  if(TeaEmail) return json({ ok: true, msg: "订单已存在,请勿重复提交" }, 200);
+  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+  await db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`)
+      .bind(Email, 'o1', chinaTime).run()
+  return json({ ok: true, msg: "添加成功" }, 200);
 }
