@@ -2,6 +2,7 @@ export const HomeCaidan = [
   { label: 'Plus卡密管理', key: 'PlusCard', path: '/dashboard/PlusCard' },
   { label: 'Plus成品号管理', key: 'PlusEmail', path: '/dashboard/PlusEmail' },
   { label: 'Plus订阅管理', key: 'PlusOrder', path: '/dashboard/PlusOrder' },
+  { label: 'Email封禁管理', key: 'Disable', path: '/dashboard/Disable' },
   { label: 'Team卡密管理', key: 'TeamCard', path: '/dashboard/TeamCard' },
   { label: 'Team团队管理', key: 'TeamToken', path: '/dashboard/TeamToken' },
   { label: 'Team订单管理', key: 'TeamOrder', path: '/dashboard/TeamOrder' },
@@ -86,6 +87,16 @@ export const BiaogeName = [
       { key: 'State', label: '订单状态', class: '', type: 'Select' },
       { key: 'created_at', label: '创建时间', class: '', type: 'Datetime', readOnly: true },
       { key: 'updated_at', label: '更新时间', class: '', type: 'Datetime', optional: true },
+    ],
+  },
+  {
+    key: 'Disable',
+    Conten: [
+      { key: 'id', label: 'ID', class: '', type: 'Number', readOnly: true },
+      { key: 'email', label: '邮箱地址', class: '', type: 'Text' },
+      { key: 'state', label: '封禁状态', class: '', type: 'Select', optionsKey: 'DisableState' },
+      { key: 'AddTime', label: '添加时间', class: '', type: 'Datetime', readOnly: true },
+      { key: 'UpdTime', label: '更新时间', class: '', type: 'Datetime', optional: true },
     ],
   },
 ];
