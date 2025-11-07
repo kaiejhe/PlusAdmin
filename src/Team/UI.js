@@ -93,10 +93,10 @@ export const BiaogeName = [
     key: 'disable',
     Conten: [
       { key: 'id', label: 'ID', class: '', type: 'Number', readOnly: true },
-      { key: 'email', label: '邮箱地址', class: '', type: 'Text' },
-      { key: 'state', label: '封禁状态', class: '', type: 'Select', optionsKey: 'DisableState' },
-      { key: 'AddTime', label: '添加时间', class: '', type: 'Datetime', readOnly: true },
-      { key: 'UpdTime', label: '更新时间', class: '', type: 'Datetime', optional: true },
+      { key: 'email', label: '邮箱帐号', class: '', type: 'Text' },
+      { key: 'state', label: '处理进度', class: '', type: 'Select', optionsKey: 'DisableState' },
+      { key: 'AddTime', label: '禁用时间', class: '', type: 'Datetime', readOnly: true },
+      { key: 'UpdTime', label: '完成时间', class: '', type: 'Datetime', optional: true },
     ],
   },
 ];

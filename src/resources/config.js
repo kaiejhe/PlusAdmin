@@ -29,8 +29,8 @@ export const STATUS_OPTIONS = {
     { label: '封禁中', value: 'o3' },
   ],
   DisableState: [
-    { label: '封禁中', value: 'o1' },
-    { label: '已解除', value: 'o2' },
+    { label: '待处理', value: 'o1' },
+    { label: '已完成', value: 'o2' },
   ],
   State: [
     { label: '待处理', value: 'o1' },
@@ -166,12 +166,12 @@ export const RESOURCE_CONFIG = {
   },
   Disable: {
     title: 'Email封禁管理',
-    description: '维护被封禁的邮箱列表，便于后台快速查找、解封或新增限制。',
+    description: '维护被封禁的邮箱列表，查看待处理与已完成的禁用记录。',
     table: 'disable',
     defaultSortField: 'AddTime',
     searchFields: [
-      { field: 'email', label: '邮箱地址', type: 'text', placeholder: '输入完整邮箱地址' },
-      { field: 'state', label: '封禁状态', type: 'select', optionsKey: 'DisableState' },
+      { field: 'email', label: '邮箱帐号', type: 'text', placeholder: '输入完整邮箱地址' },
+      { field: 'state', label: '处理进度', type: 'select', optionsKey: 'DisableState' },
     ],
     editableFields: ['email', 'state'],
     defaults: {
