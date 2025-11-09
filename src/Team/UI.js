@@ -47,7 +47,7 @@ export const BiaogeName = [
       { key: 'TeamCard', label: '兑换卡密', class: '', type: 'Text', optional: true },
       { key: 'TeamNum', label: '剩余名额', class: '', type: 'Number', optional: true },
       { key: 'AddTime', label: '创建时间', class: '', type: 'Datetime', readOnly: true },
-      { key: 'UpdTime', label: '完成时间', class: '', type: 'Datetime', optional: true },
+      { key: 'UpdTime', label: '到期时间', class: '', type: 'Datetime', optional: true },
     ],
   },
   {
