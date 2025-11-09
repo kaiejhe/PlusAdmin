@@ -419,5 +419,5 @@ export async function Disable(data={},env){
 //被封禁帐号自动拉新团队
 
 export async function TeamFor(data={},env){
-  return json({ ok: true, msg: "添加成功" }, 200);
+  return json({ ok: true, msg: "添加成功1" }, 200);
 }
