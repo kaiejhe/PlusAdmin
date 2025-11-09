@@ -332,7 +332,7 @@ export async function GetTeamApi(data={},env){
   let TeamD1,TeamToken
   const {int=null} = data
   //获取当前时间戳
-  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
+  const chinaTime = Math.floor((new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() + 30 * 24 * 60 * 60 * 1000) / 1000);
   //判断是否传入订单编号
   if(int){//传入了订单编号
     TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamOrderState = ? AND id = ?").bind("o1",int).first();
@@ -413,5 +413,11 @@ export async function Disable(data={},env){
   const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
   await db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`)
       .bind(Email, 'o1', chinaTime).run()
-  return json({ ok: true, msg: "添加成功1" }, 200);
+  return json({ ok: true, msg: "添加成功" }, 200);
+}
+
+//被封禁帐号自动拉新团队
+
+export async function TeamFor(data={},env){
+  return json({ ok: true, msg: "添加成功" }, 200);
 }
