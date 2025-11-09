@@ -101,11 +101,9 @@ export const RESOURCE_CONFIG = {
       'AfterSales',
       'TeamOrderState',
       'TeamCard',
-      'TeamNum',
     ],
     defaults: {
       TeamOrderState: 'o1',
-      TeamNum: 0,
       AfterSales: 0,
     },
   },
