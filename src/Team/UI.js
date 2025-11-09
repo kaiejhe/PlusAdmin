@@ -45,6 +45,7 @@ export const BiaogeName = [
       { key: 'AfterSales', label: '售后时长(天)', class: '', type: 'Number' },
       { key: 'TeamOrderState', label: '订单状态', class: '', type: 'Select' },
       { key: 'TeamCard', label: '兑换卡密', class: '', type: 'Text', optional: true },
+      { key: 'TeamNum', label: '补号次数', class: '', type: 'Number', optional: true },
       { key: 'AddTime', label: '创建时间', class: '', type: 'Datetime', readOnly: true },
       { key: 'UpdTime', label: '到期时间', class: '', type: 'Datetime', optional: true },
     ],

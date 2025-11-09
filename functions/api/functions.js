@@ -29,6 +29,7 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'GetTeamApi'  && request.method === 'POST') return GetTeamApi(data, env)
     if (msgoogle === 'GetPlusApi'  && request.method === 'POST') return GetPlusApi(data, env)
     if (msgoogle === 'disable'  && request.method === 'POST') return Disable(data, env)
+    if (msgoogle === 'TeamForlist'  && request.method === 'POST') return TeamForlist(data, env)
     return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
@@ -416,8 +417,7 @@ export async function Disable(data={},env){
   return json({ ok: true, msg: "添加成功" }, 200);
 }
 
-//被封禁帐号自动拉新团队
-
-export async function TeamFor(data={},env){
-  return json({ ok: true, msg: "添加成功1" }, 200);
+//重复的订单数据处理方法
+export async function TeamForlist(data={},env){
+  
 }
