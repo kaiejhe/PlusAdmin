@@ -418,6 +418,30 @@ export async function Disable(data={},env){
 }
 
 //重复的订单数据处理方法
-export async function TeamForlist(data={},env){
-  
+export async function TeamForlist(data = {}, env) {
+  const db = env.TokenD1;
+  try {
+    const { results } = await db
+      .prepare(`
+        SELECT *
+        FROM TeamOrder
+        WHERE Order_us_Email IN (
+          SELECT Order_us_Email
+          FROM TeamOrder
+          WHERE Order_us_Email IS NOT NULL AND Order_us_Email != ''
+          GROUP BY Order_us_Email
+          HAVING COUNT(*) = 2
+        )
+        ORDER BY Order_us_Email ASC, AddTime DESC
+      `)
+      .all();
+
+    const list = Array.isArray(results) ? results : [];
+    if (!list.length) {
+      return json({ ok: true, msg: "暂无符合条件的订单", data: [], total: 0 }, 200);
+    }
+    return json({ ok: true, msg: "查询成功", data: list, total: list.length }, 200);
+  } catch (error) {
+    return json({ ok: false, msg: "查询失败", error: String(error) }, 500);
+  }
 }
