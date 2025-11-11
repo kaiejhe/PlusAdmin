@@ -332,11 +332,9 @@ export async function GetTeamApi(data={},env){
   const db = env.TokenD1
   let TeamD1,TeamToken
   const {int=null} = data
-  //获取当前时间戳
-  const chinaTime = Math.floor((new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() + 30 * 24 * 60 * 60 * 1000) / 1000);
   //判断是否传入订单编号
   if(int){//传入了订单编号
-    TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamOrderState = ? AND id = ?").bind("o1",int).first();
+    TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE  AND id = ?").bind(int).first();
     if(!TeamD1) return json({ ok: false, msg: "订单查询失败",data:TeamD1}, 200);
   }else{//未传入订单编号
     TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamOrderState = ?").bind("o1").first();
@@ -362,8 +360,10 @@ export async function GetTeamApi(data={},env){
       });
     const res = await result.json()
     if(res.status==='success'){ //成功发送团队邀请
+      const created = new Date(TeamD1.UpdTime);
+      const after30Days = new Date(created.getTime() + 30 * 24 * 60 * 60 * 1000);
       await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? , UpdTime = ? WHERE id = ?")
-        .bind('o2',chinaTime,TeamD1.id).run()
+        .bind('o2',after30Days,TeamD1.id).run()
       const int = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
       return json({ ok: true, msg: "邀请成功",data:int }, 200);
     }else{  //发送团队邀请失败啦
@@ -410,7 +410,7 @@ export async function Disable(data={},env){
   if(!Email) return json({ ok: false, msg: "Email不能为空" }, 200);
   //先查询已停用的团队
   const TeaEmail = await db.prepare("SELECT * FROM  disable WHERE email = ?").bind(Email).first();
-  if(TeaEmail) return json({ ok: true, msg: "订单已存在,请勿重复提交" }, 200);
+  if(TeaEmail) return json({ ok: true, msg: "订单已存在,请勿重复提交" }, 200); 
   const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
   await db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`)
       .bind(Email, 'o1', chinaTime).run()
