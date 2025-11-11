@@ -417,11 +417,11 @@ export async function Disable(data={},env){
   return json({ ok: true, msg: "添加成功" }, 200);
 }
 
-//重复的订单数据处理方案：校准 UpdTime = AddTime + 30 天
+//重复的订单数据处理方案：校准 UpdTime = AddTime + 31 天
 export async function TeamForlist(data = {}, env) {
   const db = env.TokenD1;
   const BATCH_SIZE = 10;
-  const DAY_SECONDS = 30 * 24 * 60 * 60;
+  const DAY_SECONDS = 31 * 24 * 60 * 60;
   const DAY_MILLISECONDS = DAY_SECONDS * 1000;
 
   const isMilliseconds = (value) => Math.abs(value) > 1e12;
