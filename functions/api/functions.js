@@ -418,7 +418,7 @@ export async function Disable(data={},env){
   if(TeaEmail) return json({ ok: true, msg: "订单已存在,请勿重复提交" }, 200);
   const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
   const stmts = [
-    db.prepare("UPDATE TeamToken SET TeamTokenState = ? WHERE TeamEmail = ?").bind(Email),
+    db.prepare("UPDATE TeamToken SET TeamTokenState = ? WHERE TeamEmail = ?").bind('o2',Email),
     db.prepare("UPDATE TeamOrder SET TeamOrderState = ? WHERE OrderTeamID = ? AND TeamOrderState = ?").bind('o4',Teammail.TeamID,'o2'),
     db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`).bind(Email, 'o1', chinaTime)
   ]
