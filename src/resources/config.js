@@ -95,6 +95,7 @@ export const RESOURCE_CONFIG = {
       { field: 'OrderTeamID', label: '团队编号', type: 'text' },
       { field: 'Order_us_Email', label: '进团邮箱', type: 'text' },
       { field: 'TeamOrderState', label: '状态', type: 'select', optionsKey: 'TeamOrderState' },
+      { field: 'TeamCard', label: '卡密', type: 'text' },
     ],
     editableFields: [
       'OrderTeamID',
