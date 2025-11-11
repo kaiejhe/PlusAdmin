@@ -102,8 +102,13 @@ async function getlist(request,db) {
       whereClause = "WHERE ";
       const filterKeys = Object.keys(filters);
       filterKeys.forEach((key, index) => {
-        whereClause += `${key} = ?`;
-        values.push(filters[key]);
+        const value = filters[key];
+        const useCaseInsensitive = typeof value === 'string';
+        const comparator = useCaseInsensitive
+          ? `LOWER(${key}) = LOWER(?)`
+          : `${key} = ?`;
+        whereClause += comparator;
+        values.push(value);
         // 如果不是最后一个条件，添加 AND
         if (index < filterKeys.length - 1) {
           whereClause += " AND ";
