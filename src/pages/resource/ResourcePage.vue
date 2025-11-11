@@ -124,12 +124,16 @@
           >
             <span>{{ formatValue(column, row[column.key]) }}</span>
           </td>
-              <td class="px-4 py-3 text-right text-sm">
-                <div class="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" @click="openEditModal(row)">编辑</Button>
-                  <Button variant="destructive" size="sm" @click="deleteRecord(row)">删除</Button>
-                </div>
-              </td>
+          <td class="px-4 py-3 text-right text-sm">
+            <div class="flex flex-wrap justify-end gap-2">
+              <template v-if="isTeamOrderResource">
+                <Button variant="secondary" size="sm" @click="handleSwapTeam(row)">换团</Button>
+                <Button variant="secondary" size="sm" @click="handleInvite(row)">邀请</Button>
+              </template>
+              <Button variant="outline" size="sm" @click="openEditModal(row)">编辑</Button>
+              <Button variant="destructive" size="sm" @click="deleteRecord(row)">删除</Button>
+            </div>
+          </td>
             </tr>
           </tbody>
         </table>
@@ -524,6 +528,7 @@ const config = computed(() => RESOURCE_CONFIG[props.resourceKey] || null);
 const isTeamTokenResource = computed(() => config.value?.table === 'TeamToken');
 const isPlusEmailResource = computed(() => config.value?.table === 'PlusEmail');
 const isTeamCardResource = computed(() => config.value?.table === 'TeamCard');
+const isTeamOrderResource = computed(() => config.value?.table === 'TeamOrder');
 const bulkDialogDescription = computed(() => {
   if (!config.value) return '';
   if (isTeamCardResource.value) {
@@ -649,6 +654,23 @@ function clearFeedback() {
 
 function clearSelection() {
   selectedIds.value = [];
+}
+
+function describeTeamOrder(row = {}) {
+  const id = row?.id ?? '未知ID';
+  const email = row?.Order_us_Email ?? '未知邮箱';
+  const teamId = row?.OrderTeamID ? `团队 ${row.OrderTeamID}` : null;
+  return [teamId, `邮箱 ${email}`, `ID ${id}`].filter(Boolean).join(' · ');
+}
+
+function handleSwapTeam(row) {
+  if (!isTeamOrderResource.value) return;
+  setFeedback('default', `「换团」功能建设中：${describeTeamOrder(row)}`);
+}
+
+function handleInvite(row) {
+  if (!isTeamOrderResource.value) return;
+  setFeedback('default', `「邀请」功能建设中：${describeTeamOrder(row)}`);
 }
 
 function updateVisibleRows() {
