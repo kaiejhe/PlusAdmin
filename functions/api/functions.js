@@ -435,53 +435,57 @@ export async function TeamForlist(data = {}, env) {
 
   try {
     const { results = [] } = await db
-      .prepare(`
-        SELECT id, Order_us_Email, AddTime, UpdTime
-        FROM TeamOrder
-        WHERE AddTime IS NOT NULL
+      .prepare(
+        `
+        SELECT id, Order_us_Email, AddTime, UpdTime, expected_upd
+        FROM (
+          SELECT
+            id,
+            Order_us_Email,
+            AddTime,
+            UpdTime,
+            CASE
+              WHEN CAST(AddTime AS INTEGER) > 1000000000000
+                THEN CAST(AddTime AS INTEGER) + ?
+              ELSE CAST(AddTime AS INTEGER) + ?
+            END AS expected_upd
+          FROM TeamOrder
+          WHERE AddTime IS NOT NULL
+        )
+        WHERE expected_upd IS NOT NULL
+          AND (
+            UpdTime IS NULL
+            OR CAST(UpdTime AS INTEGER) != expected_upd
+          )
+          AND Order_us_Email IS NOT NULL
         ORDER BY AddTime ASC
         LIMIT ?
-      `)
-      .bind(BATCH_SIZE * 5)
+      `,
+      )
+      .bind(DAY_MILLISECONDS, DAY_SECONDS, BATCH_SIZE)
       .all();
 
-    const targets = [];
-
-    for (const row of results) {
-      if (targets.length >= BATCH_SIZE) break;
-      const expected = computeExpected(row.AddTime);
-      if (expected === null) continue;
-      const current = Number(row.UpdTime);
-      if (!Number.isFinite(current) || Math.round(current) !== expected) {
-        targets.push({
-          id: row.id,
-          email: row.Order_us_Email,
-          updTime: expected,
-        });
-      }
-    }
-
-    if (!targets.length) {
+    if (!results.length) {
       return json({ ok: true, msg: "暂无需要校正的数据", data: [], total: 0 }, 200);
     }
 
-    for (const item of targets) {
+    for (const row of results) {
       await db
         .prepare(`UPDATE TeamOrder SET UpdTime = ? WHERE id = ?`)
-        .bind(item.updTime, item.id)
+        .bind(row.expected_upd, row.id)
         .run();
     }
 
-    const emails = targets
-      .map((item) => item.email)
+    const emails = results
+      .map((item) => item.Order_us_Email)
       .filter((val) => typeof val === "string" && val.trim().length > 0);
 
     return json(
       {
         ok: true,
-        msg: `已校正 ${targets.length} 条订单的到期时间`,
+        msg: `已校正 ${results.length} 条订单的到期时间`,
         data: emails,
-        total: targets.length,
+        total: results.length,
       },
       200,
     );
