@@ -409,12 +409,25 @@ export async function Disable(data={},env){
   const {Email} = data
   if(!Email) return json({ ok: false, msg: "Email不能为空" }, 200);
   //先查询已停用的团队
+  //处理逻辑
+  // 1-停用团队,2-创建封禁团队邮箱,3-修改团队名下订单信息状态为o4,
+  // 查询邮箱团队是否存在
+  const Teammail = await db.prepare("SELECT * FROM  TeamToken WHERE TeamEmail = ?").bind(Email).first();
+  if(!Teammail) return json({ ok: false, msg: "团队不存在" }, 200);
   const TeaEmail = await db.prepare("SELECT * FROM  disable WHERE email = ?").bind(Email).first();
   if(TeaEmail) return json({ ok: true, msg: "订单已存在,请勿重复提交" }, 200);
   const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
-  await db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`)
-      .bind(Email, 'o1', chinaTime).run()
-  return json({ ok: true, msg: "添加成功" }, 200);
+  const stmts = [
+    db.prepare("UPDATE TeamToken SET TeamTokenState = ? WHERE TeamEmail = ?").bind(Email),
+    db.prepare("UPDATE TeamOrder SET TeamOrderState = ? WHERE OrderTeamID = ?").bind('o4',Teammail.TeamID),
+    db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`).bind(Email, 'o1', chinaTime)
+  ]
+  try {
+    await db.batch(stmts);
+    return json({ ok: true, msg: "添加成功"}, 200);
+  } catch (error) {
+    return json({ ok: false, msg: "添加失败"}, 200);
+  }
 }
 
 //重复的订单数据处理方案：校准 UpdTime = AddTime + 31 天

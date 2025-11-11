@@ -14,9 +14,10 @@ export const STATUS_OPTIONS = {
     { label: '停用', value: 'o2' },
   ],
   TeamOrderState: [
-    { label: '待处理', value: 'o1' },
-    { label: '已完成', value: 'o2' },
-    { label: '失败', value: 'o3' },
+    { label: '待邀请', value: 'o1' },
+    { label: '使用中', value: 'o2' },
+    { label: '已过期', value: 'o3' },
+    { label: '已封禁', value: 'o4' },
   ],
   PlusCardState: [
     { label: '未使用', value: 'o1' },
