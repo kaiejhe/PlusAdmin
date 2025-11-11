@@ -408,10 +408,6 @@ export async function Disable(data={},env){
   const db = env.TokenD1
   const {Email} = data
   if(!Email) return json({ ok: false, msg: "Email不能为空" }, 200);
-  //先查询已停用的团队
-  //处理逻辑
-  // 1-停用团队,2-创建封禁团队邮箱,3-修改团队名下订单信息状态为o4,
-  // 查询邮箱团队是否存在
   const Teammail = await db.prepare("SELECT * FROM  TeamToken WHERE TeamEmail = ?").bind(Email).first();
   if(!Teammail) return json({ ok: false, msg: "团队不存在" }, 200);
   const TeaEmail = await db.prepare("SELECT * FROM  disable WHERE email = ?").bind(Email).first();
