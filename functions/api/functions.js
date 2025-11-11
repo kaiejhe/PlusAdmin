@@ -334,7 +334,7 @@ export async function GetTeamApi(data={},env){
   const {int=null} = data
   //判断是否传入订单编号
   if(int){//传入了订单编号
-    TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE  AND id = ?").bind(int).first();
+    TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(int).first();
     if(!TeamD1) return json({ ok: false, msg: "订单查询失败",data:TeamD1}, 200);
   }else{//未传入订单编号
     TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamOrderState = ?").bind("o1").first();
@@ -364,8 +364,8 @@ export async function GetTeamApi(data={},env){
       const after30Days = new Date(created.getTime() + 30 * 24 * 60 * 60 * 1000);
       await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? , UpdTime = ? WHERE id = ?")
         .bind('o2',after30Days,TeamD1.id).run()
-      const int = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
-      return json({ ok: true, msg: "邀请成功",data:int }, 200);
+      const reorder = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
+      return json({ ok: true, msg: "邀请成功",data:reorder }, 200);
     }else{  //发送团队邀请失败啦
       return json({ ok: false, msg: "邀请失败[未知原因[202]",data:res }, 200);
     }
