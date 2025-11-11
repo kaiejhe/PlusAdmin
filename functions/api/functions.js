@@ -412,16 +412,18 @@ export async function GetPlusApi(data={},env){
 export async function Disable(data={},env){
   const db = env.TokenD1
   const {Email} = data
-  if(!Email) return json({ ok: false, msg: "Email不能为空" }, 200);
-  const Teammail = await db.prepare("SELECT * FROM  TeamToken WHERE TeamEmail = ?").bind(Email).first();
+  const normalizedEmail = typeof Email === 'string' ? Email.trim() : ''
+  if(!normalizedEmail) return json({ ok: false, msg: "Email不能为空" }, 200);
+  const normalizedEmailLower = normalizedEmail.toLowerCase()
+  const Teammail = await db.prepare("SELECT * FROM  TeamToken WHERE LOWER(TeamEmail) = ?").bind(normalizedEmailLower).first();
   if(!Teammail) return json({ ok: false, msg: "团队不存在" }, 200);
-  const TeaEmail = await db.prepare("SELECT * FROM  disable WHERE email = ?").bind(Email).first();
+  const TeaEmail = await db.prepare("SELECT * FROM  disable WHERE LOWER(email) = ?").bind(normalizedEmailLower).first();
   if(TeaEmail) return json({ ok: true, msg: "订单已存在,请勿重复提交" }, 200);
   const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
   const stmts = [
-    db.prepare("UPDATE TeamToken SET TeamTokenState = ? WHERE TeamEmail = ?").bind('o2',Email),
+    db.prepare("UPDATE TeamToken SET TeamTokenState = ? WHERE LOWER(TeamEmail) = ?").bind('o2',normalizedEmailLower),
     db.prepare("UPDATE TeamOrder SET TeamOrderState = ? WHERE OrderTeamID = ? AND TeamOrderState = ?").bind('o4',Teammail.TeamID,'o2'),
-    db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`).bind(Email, 'o1', chinaTime)
+    db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`).bind(normalizedEmail, 'o1', chinaTime)
   ]
   try {
     await db.batch(stmts);
