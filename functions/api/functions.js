@@ -417,36 +417,75 @@ export async function Disable(data={},env){
   return json({ ok: true, msg: "添加成功" }, 200);
 }
 
-//重复的订单数据处理方案
+//重复的订单数据处理方案：校准 UpdTime = AddTime + 30 天
 export async function TeamForlist(data = {}, env) {
   const db = env.TokenD1;
+  const BATCH_SIZE = 10;
+  const DAY_SECONDS = 30 * 24 * 60 * 60;
+  const DAY_MILLISECONDS = DAY_SECONDS * 1000;
+
+  const isMilliseconds = (value) => Math.abs(value) > 1e12;
+
+  const computeExpected = (addTime) => {
+    const num = Number(addTime);
+    if (!Number.isFinite(num) || num <= 0) return null;
+    const delta = isMilliseconds(num) ? DAY_MILLISECONDS : DAY_SECONDS;
+    return Math.round(num + delta);
+  };
+
   try {
-    const query = await db
+    const { results = [] } = await db
       .prepare(`
-        SELECT DISTINCT Order_us_Email AS email
+        SELECT id, Order_us_Email, AddTime, UpdTime
         FROM TeamOrder
-        WHERE AfterSales = 10
-          AND Order_us_Email IS NOT NULL
-          AND Order_us_Email != ''
-        ORDER BY Order_us_Email COLLATE NOCASE ASC
+        WHERE AddTime IS NOT NULL
+        ORDER BY AddTime ASC
+        LIMIT ?
       `)
+      .bind(BATCH_SIZE * 5)
       .all();
 
-    const emails = (query?.results || [])
-      .map((item) => item.email)
-      .filter(Boolean);
+    const targets = [];
 
-    const plainList = emails.join("\n");
+    for (const row of results) {
+      if (targets.length >= BATCH_SIZE) break;
+      const expected = computeExpected(row.AddTime);
+      if (expected === null) continue;
+      const current = Number(row.UpdTime);
+      if (!Number.isFinite(current) || Math.round(current) !== expected) {
+        targets.push({
+          id: row.id,
+          email: row.Order_us_Email,
+          updTime: expected,
+        });
+      }
+    }
+
+    if (!targets.length) {
+      return json({ ok: true, msg: "暂无需要校正的数据", data: [], total: 0 }, 200);
+    }
+
+    for (const item of targets) {
+      await db
+        .prepare(`UPDATE TeamOrder SET UpdTime = ? WHERE id = ?`)
+        .bind(item.updTime, item.id)
+        .run();
+    }
+
+    const emails = targets
+      .map((item) => item.email)
+      .filter((val) => typeof val === "string" && val.trim().length > 0);
+
     return json(
       {
         ok: true,
-        msg: emails.length ? "查询成功" : "暂无符合条件的数据",
-        data: plainList,
-        total: emails.length,
+        msg: `已校正 ${targets.length} 条订单的到期时间`,
+        data: emails,
+        total: targets.length,
       },
       200,
     );
   } catch (error) {
-    return json({ ok: false, msg: "查询失败", error: String(error) }, 500);
+    return json({ ok: false, msg: "处理失败", error: String(error) }, 500);
   }
 }
