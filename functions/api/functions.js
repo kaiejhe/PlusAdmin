@@ -420,106 +420,33 @@ export async function Disable(data={},env){
 //重复的订单数据处理方案
 export async function TeamForlist(data = {}, env) {
   const db = env.TokenD1;
-  const MAX_LIMIT = 1;
-  let { limit = 1 } = data;
-  limit = Number(limit);
-  if (!Number.isFinite(limit) || limit <= 0) {
-    return json({ ok: false, msg: "limit 必须是正整数" }, 400);
-  }
-  const effectiveLimit = Math.min(Math.floor(limit), MAX_LIMIT);
-
   try {
-    const duplicateEmailRes = await db
+    const query = await db
       .prepare(`
-        SELECT Order_us_Email AS email
+        SELECT DISTINCT Order_us_Email AS email
         FROM TeamOrder
-        WHERE Order_us_Email IS NOT NULL AND Order_us_Email != ''
-        GROUP BY Order_us_Email
-        HAVING COUNT(*) = 2
-        ORDER BY MAX(AddTime) DESC
-        LIMIT ?
+        WHERE AfterSales = 10
+          AND Order_us_Email IS NOT NULL
+          AND Order_us_Email != ''
+        ORDER BY Order_us_Email COLLATE NOCASE ASC
       `)
-      .bind(effectiveLimit)
       .all();
 
-    const emailList = (duplicateEmailRes?.results || [])
+    const emails = (query?.results || [])
       .map((item) => item.email)
       .filter(Boolean);
 
-    if (!emailList.length) {
-      return json({ ok: true, msg: "暂无可处理的邮箱", data: [], total: 0 }, 200);
-    }
-
-    const placeholders = emailList.map(() => "?").join(", ");
-    const ordersRes = await db
-      .prepare(
-        `
-        SELECT *
-        FROM TeamOrder
-        WHERE Order_us_Email IN (${placeholders})
-        ORDER BY Order_us_Email ASC, AddTime DESC
-      `,
-      )
-      .bind(...emailList)
-      .all();
-
-    const orders = Array.isArray(ordersRes?.results) ? ordersRes.results : [];
-    if (!orders.length) {
-      return json({ ok: true, msg: "未查到待处理的订单", data: [], total: 0 }, 200);
-    }
-
-    const processed = [];
-
-    for (const email of emailList) {
-      const pair = orders.filter((order) => order.Order_us_Email === email);
-      if (pair.length !== 2) continue;
-
-      pair.sort((a, b) => {
-        const timeA = Number(a.AddTime) || 0;
-        const timeB = Number(b.AddTime) || 0;
-        return timeB - timeA;
-      });
-
-      const newer = pair[0];
-      const older = pair[1];
-      if (!newer?.id || !older?.id) continue;
-
-      const nextTeamNum = (Number(older.TeamNum) || 0) + 1;
-      const now = Math.floor(Date.now() / 1000);
-
-      const stmts = [
-        db
-          .prepare(
-            `UPDATE TeamOrder SET OrderTeamID = ?, TeamNum = ?, UpdTime = ? WHERE id = ?`,
-          )
-          .bind(newer.OrderTeamID, nextTeamNum, now, older.id),
-        db.prepare(`DELETE FROM TeamOrder WHERE id = ?`).bind(newer.id),
-      ];
-
-      await db.batch(stmts);
-      processed.push({
-        email,
-        updatedId: older.id,
-        deletedId: newer.id,
-        assignedTeamID: newer.OrderTeamID,
-        teamNum: nextTeamNum,
-      });
-    }
-
-    if (!processed.length) {
-      return json({ ok: true, msg: "未处理任何数据", data: [], total: 0 }, 200);
-    }
-
+    const plainList = emails.join("\n");
     return json(
       {
         ok: true,
-        msg: "处理完成",
-        data: processed,
-        total: processed.length,
+        msg: emails.length ? "查询成功" : "暂无符合条件的数据",
+        data: plainList,
+        total: emails.length,
       },
       200,
     );
   } catch (error) {
-    return json({ ok: false, msg: "处理失败", error: String(error) }, 500);
+    return json({ ok: false, msg: "查询失败", error: String(error) }, 500);
   }
 }
