@@ -139,7 +139,6 @@ async function getlist(request,db) {
 async function foradd(request,db) {
     const {CardList = [],type,AfterSales=0,TeamType='Team'} = request;
     if(CardList.length < 1 ) return json({ ok: false, msg: "当前页面不存在" }, 404);
-    const chinaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime();
     let SqlName = '';
     let Tssss = null;
     let columns = [];
@@ -150,7 +149,7 @@ async function foradd(request,db) {
         return {
           PlusCard: index,
           PlusCardState: "o1",
-          AddTime: chinaTime,
+          AddTime: GetTimedays(),
         };
       });
       columns = ["PlusCard", "PlusCardState", "AddTime"];
@@ -163,7 +162,7 @@ async function foradd(request,db) {
           TeamCardState: "o1",
           TeamType: TeamType,
           AfterSales:AfterSales,
-          AddTime: chinaTime,
+          AddTime: GetTimedays(),
         };
       });
        columns = ["TeamCard", "TeamCardState", "TeamType", "AfterSales", "AddTime",];
@@ -313,15 +312,14 @@ export async function TeamEmail(request, env){
     if(CardRes.TeamCardState=='o3') return json({ ok: false, msg: "兑换码已失效!" }, 200);
     return json({ ok: false, msg: "当前页面不存在",data:CardRes }, 200); 
   }
-  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
   const TeamToken = await db.prepare(`SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey > 0 `)
       .bind("o1", CardRes.AfterSales).first();
   if(!TeamToken) return json({ ok: false, msg: "当前商品库存不足",data:TeamToken }, 200);
   const stmts = [
     db.prepare("UPDATE TeamToken SET NumKey = NumKey - 1 WHERE id = ? AND NumKey > 0").bind(TeamToken.id),
-    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind("o2",chinaTime,Card),
+    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind("o2",GetTimedays(),Card),
     db.prepare( `INSERT INTO TeamOrder (Order_us_Email, AfterSales, TeamCard, TeamOrderState,AddTime,OrderTeamID) VALUES (?, ?, ?,?,?,?)`)
-      .bind(Email, CardRes.AfterSales, Card, 'o1',chinaTime,TeamToken.TeamID)
+      .bind(Email, CardRes.AfterSales, Card, 'o1',GetTimedays(),TeamToken.TeamID)
   ]
   try {
     await db.batch(stmts);
@@ -365,9 +363,8 @@ export async function GetTeamApi(data={},env){
       });
     const res = await result.json()
     if(res.status==='success'){ //成功发送团队邀请
-      const chinaTime = Math.floor((new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() + 30 * 24 * 60 * 60 * 1000) / 1000);
       await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? , UpdTime = ? WHERE id = ?")
-        .bind('o2',chinaTime,TeamD1.id).run()
+        .bind('o2',GetTimedays(TeamD1.AddTime,30),TeamD1.id).run()
       const int = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
       return json({ ok: true, msg: "邀请成功",data:int }, 200);
     }else{  //发送团队邀请失败啦
@@ -393,10 +390,9 @@ export async function GetPlusApi(data={},env){
   }
   const PlusEmail = await db.prepare("SELECT * FROM  PlusEmail WHERE PlusState = ?").bind('o1').first()
   if(!PlusEmail) return json({ ok: false, msg: "Plus库存不足,请联系客服补充库存。" }, 200);
-  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
   const stmts = [
-    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind('o2',chinaTime,Card),
-    db.prepare("UPDATE PlusEmail SET PlusState = ?,UpdTime = ?,PlusCard = ? WHERE id = ? AND PlusState = 'o1'").bind("o2",chinaTime,Card,PlusEmail.id)
+    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind('o2',GetTimedays(),Card),
+    db.prepare("UPDATE PlusEmail SET PlusState = ?,UpdTime = ?,PlusCard = ? WHERE id = ? AND PlusState = 'o1'").bind("o2",GetTimedays(),Card,PlusEmail.id)
   ]
   try {
     await db.batch(stmts);
@@ -418,11 +414,10 @@ export async function Disable(data={},env){
   if(!Teammail) return json({ ok: false, msg: "团队不存在" }, 200);
   const TeaEmail = await db.prepare("SELECT * FROM  disable WHERE LOWER(email) = ?").bind(normalizedEmailLower).first();
   if(TeaEmail) return json({ ok: true, msg: "订单已存在,请勿重复提交" }, 200);
-  const chinaTime = Math.floor(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() / 1000);
   const stmts = [
     db.prepare("UPDATE TeamToken SET TeamTokenState = ? WHERE LOWER(TeamEmail) = ?").bind('o2',normalizedEmailLower),
     db.prepare("UPDATE TeamOrder SET TeamOrderState = ? WHERE OrderTeamID = ? AND TeamOrderState = ?").bind('o4',Teammail.TeamID,'o2'),
-    db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`).bind(normalizedEmail, 'o1', chinaTime)
+    db.prepare( `INSERT INTO disable (email, state, AddTime) VALUES (?, ?, ?)`).bind(normalizedEmail, 'o1', GetTimedays())
   ]
   try {
     await db.batch(stmts);
@@ -516,4 +511,18 @@ export async function TeamForlist(data = {}, env) {
   } catch (error) {
     return json({ ok: false, msg: "处理失败", error: String(error) }, 500);
   }
+}
+
+//生成时间戳方法
+export function GetTimedays(Time = 0, days = 0){
+  let baseMs;
+  if(Time){
+    const t = Number(Time);
+    baseMs = t < 1e12 ? t * 1000 : t;
+  }else{
+    baseMs = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+    ).getTime();
+  }
+  return baseMs + days * 24 * 60 * 60 * 1000;
 }
