@@ -353,7 +353,7 @@ export async function GetTeamApi(data={},env){
     Role:"standard-user",
     TeamID:TeamToken.TeamID
   })
-  return ReturnJSON({ ok: false, msg: "查询订单绑定的Team团队失败",data:result}, 200);
+  return ReturnJSON({ ok: false, msg: "查询订单绑定的Team团队失败",data:result.json()}, 200);
   
 }
 
