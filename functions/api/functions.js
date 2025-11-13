@@ -31,7 +31,7 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'GetPlusApi'  && request.method === 'POST') return GetPlusApi(data, env)
     if (msgoogle === 'disable'  && request.method === 'POST') return Disable(data, env)
     if (msgoogle === 'TeamForlist'  && request.method === 'POST') return TeamForlist(data, env)
-    if (msgoogle === 'GenghuanTeam'  && request.method === 'GenghuanTeam') return GenghuanTeam(data, env)
+    if (msgoogle === 'GenghuanTeam'  && request.method === 'POST') return GenghuanTeam(data, env)
     return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
