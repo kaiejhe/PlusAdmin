@@ -46,9 +46,7 @@ export async function GetTeamApi(data) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        JsonData,
-      }),
+      body: JsonData,
     });
     return ReturnJSON({ ok: true, msg: "查询成功", data: result }, 200);
   } catch (error) {
