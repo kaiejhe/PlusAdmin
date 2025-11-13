@@ -664,8 +664,28 @@ function describeTeamOrder(row = {}) {
 }
 
 function handleSwapTeam(row) {
-  if (!isTeamOrderResource.value) return;
-  setFeedback('default', `「换团」功能建设中：${describeTeamOrder(row)}`);
+  if (!isTeamOrderResource.value || !row?.id) return;
+  saving.value = true;
+  setFeedback('default', `正在申请换团：${describeTeamOrder(row)}`);
+  PostApi(
+    JSON.stringify({
+      msgoogle: 'GenghuanTeam',
+      data: { id: row.id },
+    }),
+  )
+    .then(async (response) => {
+      if (!response?.ok) {
+        throw new Error(response?.msg || '换团失败');
+      }
+      setFeedback('success', response.msg || '换团成功');
+      await fetchData();
+    })
+    .catch((error) => {
+      setFeedback('error', error.message || '换团失败');
+    })
+    .finally(() => {
+      saving.value = false;
+    });
 }
 
 async function handleInvite(row) {

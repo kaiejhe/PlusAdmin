@@ -31,6 +31,7 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'GetPlusApi'  && request.method === 'POST') return GetPlusApi(data, env)
     if (msgoogle === 'disable'  && request.method === 'POST') return Disable(data, env)
     if (msgoogle === 'TeamForlist'  && request.method === 'POST') return TeamForlist(data, env)
+    if (msgoogle === 'GenghuanTeam'  && request.method === 'GenghuanTeam') return TeamForlist(data, env)
     return json({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
@@ -357,13 +358,11 @@ export async function GetTeamApi(data={},env){
     await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? , UpdTime = ? WHERE id = ?")
         .bind('o2',GetTimedays(TeamD1.AddTime,30),TeamD1.id).run()
     const Teamint = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
-    return ReturnJSON({ ok: true, msg: "邀请成功1",data:Teamint }, 200);
+    return ReturnJSON({ ok: true, msg: "邀请成功",data:Teamint }, 200);
   }else{
-    return json({ ok: false, msg: "邀请失败[未知原因[202]",data:result }, 200);
+    return ReturnJSON({ ok: false, msg: "邀请失败[未知原因[202]",data:result }, 200);
   }
 }
-
-
 //前端调用方法->兑换码验证-获取Plus成品帐号:
 export async function GetPlusApi(data={},env){
   const db = env.TokenD1
@@ -396,12 +395,12 @@ export async function Disable(data={},env){
   const db = env.TokenD1
   const {Email} = data
   const normalizedEmail = typeof Email === 'string' ? Email.trim() : ''
-  if(!normalizedEmail) return json({ ok: false, msg: "Email不能为空" }, 200);
+  if(!normalizedEmail) return ReturnJSON({ ok: false, msg: "Email不能为空" }, 200);
   const normalizedEmailLower = normalizedEmail.toLowerCase()
   const Teammail = await db.prepare("SELECT * FROM  TeamToken WHERE LOWER(TeamEmail) = ?").bind(normalizedEmailLower).first();
-  if(!Teammail) return json({ ok: false, msg: "团队不存在" }, 200);
+  if(!Teammail) return ReturnJSON({ ok: false, msg: "团队不存在" }, 200);
   const TeaEmail = await db.prepare("SELECT * FROM  disable WHERE LOWER(email) = ?").bind(normalizedEmailLower).first();
-  if(TeaEmail) return json({ ok: true, msg: "订单已存在,请勿重复提交" }, 200);
+  if(TeaEmail) return ReturnJSON({ ok: true, msg: "订单已存在,请勿重复提交" }, 200);
   const stmts = [
     db.prepare("UPDATE TeamToken SET TeamTokenState = ? WHERE LOWER(TeamEmail) = ?").bind('o2',normalizedEmailLower),
     db.prepare("UPDATE TeamOrder SET TeamOrderState = ? WHERE OrderTeamID = ? AND TeamOrderState = ?").bind('o4',Teammail.TeamID,'o2'),
@@ -409,9 +408,9 @@ export async function Disable(data={},env){
   ]
   try {
     await db.batch(stmts);
-    return json({ ok: true, msg: "添加成功"}, 200);
+    return ReturnJSON({ ok: true, msg: "添加成功"}, 200);
   } catch (error) {
-    return json({ ok: false, msg: "添加失败"}, 200);
+    return ReturnJSON({ ok: false, msg: "添加失败"}, 200);
   }
 }
 
@@ -505,18 +504,18 @@ export async function TeamForlist(data = {}, env) {
 export async function GenghuanTeam(data={},env){
   const db = env.TokenD1
   const {id} = data
-  if(!id) return json({ ok: false, msg: "订单参数异常"}, 200);
+  if(!id) return ReturnJSON({ ok: false, msg: "订单参数异常"}, 200);
   //查询订单
   const DingDan = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ? ").bind(id).first();
-  if(!DingDan) return json({ ok: false, msg: "查询订单失败"}, 200);
+  if(!DingDan) return ReturnJSON({ ok: false, msg: "查询订单失败"}, 200);
   if(DingDan.TeamOrderState!='o4'){
-    if(DingDan.TeamOrderState==='o1') return json({ ok: false, msg: "等待发送邀请邮件"}, 200);
-    if(DingDan.TeamOrderState==='o2') return json({ ok: false, msg: "当前团队状态正常,如有异常请联系客服!"}, 200);
-    if(DingDan.TeamOrderState==='o3') return json({ ok: false, msg: "当前订单已过期,请先续费!"}, 200);
-    return json({ ok: false, msg: "订单状态异常"}, 200);
+    if(DingDan.TeamOrderState==='o1') return ReturnJSON({ ok: false, msg: "等待发送邀请邮件"}, 200);
+    if(DingDan.TeamOrderState==='o2') return ReturnJSON({ ok: false, msg: "当前团队状态正常,如有异常请联系客服!"}, 200);
+    if(DingDan.TeamOrderState==='o3') return ReturnJSON({ ok: false, msg: "当前订单已过期,请先续费!"}, 200);
+    return ReturnJSON({ ok: false, msg: "订单状态异常"}, 200);
   }
   const Team = await db.prepare("SELECT * FROM  TeamToken WHERE TeamTokenState = ? AND NumKey > 0 AND AfterSales=?").bind('o1',30).first();
-  if(!Team) json({ ok: false, msg: "Team库存不足,请联系客服补充库存!"}, 200);
+  if(!Team)return ReturnJSON({ ok: false, msg: "Team库存不足,请联系客服补充库存!"}, 200);
   //锁定库存,更改订单信息,
   const stmts = [
     db.prepare("UPDATE TeamToken SET NumKey = NumKey - 1 WHERE id = ? AND NumKey > 0").bind(Team.id),
@@ -524,9 +523,9 @@ export async function GenghuanTeam(data={},env){
   ]
   try {
     await db.batch(stmts);
-
+    return ReturnJSON({ ok: true, msg: "团队更换成功,请发起进团邀请"}, 200);
   } catch (error) {
-    return json({ ok: false, msg: "更改团队失败"}, 200);
+    return ReturnJSON({ ok: false, msg: "更换团队异常,请重试或联系客服"}, 200);
   }
 }
 
