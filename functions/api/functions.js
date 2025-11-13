@@ -354,26 +354,7 @@ export async function GetTeamApi(data={},env){
     TeamID:TeamToken.TeamID
   })
   return ReturnJSON({ ok: false, msg: "查询订单绑定的Team团队失败"}, 200);
-  try {
-    const result = await fetch("http://pyapi.my91.my/TeamAdd", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JsonData,
-      });
-    const res = await result.json()
-    if(res.status==='success'){ //成功发送团队邀请
-      await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? , UpdTime = ? WHERE id = ?")
-        .bind('o2',GetTimedays(TeamD1.AddTime,30),TeamD1.id).run()
-      const int = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
-      return json({ ok: true, msg: "邀请成功",data:int }, 200);
-    }else{  //发送团队邀请失败啦
-      return json({ ok: false, msg: "邀请失败[未知原因[202]",data:res }, 200);
-    }
-  } catch (error) { //发起团队邀请出错啦
-    return json({ ok: false, msg: "邀请失败[未知原因[203]",data:error }, 200);
-  }
+  
 }
 
 
