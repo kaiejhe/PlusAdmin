@@ -1,4 +1,4 @@
-
+import { ReturnJSON } from "./Res";
 //协议头处理,跨域
 const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), {
@@ -512,6 +512,36 @@ export async function TeamForlist(data = {}, env) {
     return json({ ok: false, msg: "处理失败", error: String(error) }, 500);
   }
 }
+
+//个人申请更换团队
+export async function GenghuanTeam(data={},env){
+  const db = env.TokenD1
+  const {id} = data
+  if(!id) return json({ ok: false, msg: "订单参数异常"}, 200);
+  //查询订单
+  const DingDan = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ? ").bind(id).first();
+  if(!DingDan) return json({ ok: false, msg: "查询订单失败"}, 200);
+  if(DingDan.TeamOrderState!='o4'){
+    if(DingDan.TeamOrderState==='o1') return json({ ok: false, msg: "等待发送邀请邮件"}, 200);
+    if(DingDan.TeamOrderState==='o2') return json({ ok: false, msg: "当前团队状态正常,如有异常请联系客服!"}, 200);
+    if(DingDan.TeamOrderState==='o3') return json({ ok: false, msg: "当前订单已过期,请先续费!"}, 200);
+    return json({ ok: false, msg: "订单状态异常"}, 200);
+  }
+  const Team = await db.prepare("SELECT * FROM  TeamToken WHERE TeamTokenState = ? AND NumKey > 0 AND AfterSales=?").bind('o1',30).first();
+  if(!Team) json({ ok: false, msg: "Team库存不足,请联系客服补充库存!"}, 200);
+  //锁定库存,更改订单信息,
+  const stmts = [
+    db.prepare("UPDATE TeamToken SET NumKey = NumKey - 1 WHERE id = ? AND NumKey > 0").bind(Team.id),
+    db.prepare("UPDATE TeamOrder SET OrderTeamID = ?,TeamOrderState = ? WHERE id = ?").bind(Teammail.TeamID,'o1',id)
+  ]
+  try {
+    await db.batch(stmts);
+
+  } catch (error) {
+    return json({ ok: false, msg: "更改团队失败"}, 200);
+  }
+}
+
 
 //生成时间戳方法
 export function GetTimedays(Time = 0, days = 0){

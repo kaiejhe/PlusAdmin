@@ -1,0 +1,52 @@
+//统一返回结构
+export const ReturnJSON = (data, status = 200, headers = {}) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      ...headers,
+    },
+  });
+
+//网络请求接口统一封装
+export async function httpRequest({
+  url,
+  method = 'GET',
+  headers = { 'Content-Type': 'application/json' },
+  body,
+} = {}) {
+  if (!url) {
+    return ReturnJSON({ ok: false, msg: '缺少请求 URL' }, 400);
+  }
+
+  const fetchOptions = { method, headers };
+
+  // 仅在需要时序列化 body
+  if (method !== 'GET' && body !== undefined) {
+    fetchOptions.body =
+      headers['Content-Type'] === 'application/json'
+        ? JSON.stringify(body)
+        : body;
+  }
+
+  try:
+    const response = await fetch(url, fetchOptions);
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      return ReturnJSON(
+        { ok: false, msg: data?.msg || '请求失败', error: data },
+        response.status,
+      );
+    }
+    return ReturnJSON({ ok: true, data }, response.status);
+  } catch (error) {
+    return ReturnJSON(
+      { ok: false, msg: '网络请求异常', error: String(error) },
+      500,
+    );
+  }
+}
+
