@@ -483,7 +483,7 @@ import {
 } from '@/api';
 import { RESOURCE_CONFIG, STATUS_OPTIONS } from '@/resources/config';
 import { TableSchemaMap } from '@/Team/UI';
-import { GetTime, RandomGroup } from '@/Team/Post';
+import { GetTime, RandomGroup, PostApi } from '@/Team/Post';
 
 const props = defineProps({
   resourceKey: {
@@ -668,9 +668,27 @@ function handleSwapTeam(row) {
   setFeedback('default', `「换团」功能建设中：${describeTeamOrder(row)}`);
 }
 
-function handleInvite(row) {
-  if (!isTeamOrderResource.value) return;
-  setFeedback('default', `「邀请」功能建设中：${describeTeamOrder(row)}`);
+async function handleInvite(row) {
+  if (!isTeamOrderResource.value || !row?.id) return;
+  saving.value = true;
+  setFeedback('default', `正在发送邀请：${describeTeamOrder(row)}`);
+  try {
+    const response = await PostApi(
+      JSON.stringify({
+        msgoogle: 'GetTeamApi',
+        data: { int: row.id },
+      }),
+    );
+    if (!response?.ok) {
+      throw new Error(response?.msg || '邀请失败');
+    }
+    setFeedback('success', response.msg || '邀请成功');
+    await fetchData();
+  } catch (error) {
+    setFeedback('error', error.message || '邀请失败');
+  } finally {
+    saving.value = false;
+  }
 }
 
 function updateVisibleRows() {
