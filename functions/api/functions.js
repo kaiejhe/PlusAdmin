@@ -353,8 +353,14 @@ export async function GetTeamApi(data={},env){
     Role:"standard-user",
     TeamID:TeamToken.TeamID
   })
-  return result;
-  
+  if(result.ok){
+    await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? , UpdTime = ? WHERE id = ?")
+        .bind('o2',GetTimedays(TeamD1.AddTime,30),TeamD1.id).run()
+    const Teamint = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
+    return ReturnJSON({ ok: true, msg: "邀请成功",data:Teamint }, 200);
+  }else{
+    return json({ ok: false, msg: "邀请失败[未知原因[202]",data:result }, 200);
+  }
 }
 
 
