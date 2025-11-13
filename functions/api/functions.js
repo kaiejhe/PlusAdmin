@@ -337,8 +337,6 @@ export async function GetTeamApi(data={},env){
   const db = env.TokenD1
   let TeamD1,TeamToken
   const {int=null} = data
-  //获取当前时间戳
-  const chinaTime = Math.floor((new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() + 30 * 24 * 60 * 60 * 1000) / 1000);
   //判断是否传入订单编号
   if(int){//传入了订单编号
     TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE  id = ?").bind(int).first();
@@ -367,6 +365,7 @@ export async function GetTeamApi(data={},env){
       });
     const res = await result.json()
     if(res.status==='success'){ //成功发送团队邀请
+      const chinaTime = Math.floor((new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() + 30 * 24 * 60 * 60 * 1000) / 1000);
       await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? , UpdTime = ? WHERE id = ?")
         .bind('o2',chinaTime,TeamD1.id).run()
       const int = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
@@ -433,75 +432,84 @@ export async function Disable(data={},env){
   }
 }
 
-//重复的订单数据处理方案：校准 UpdTime = AddTime + 31 天
+//重复的订单数据处理方案：补足 AddTime / UpdTime 为 13 位时间戳
 export async function TeamForlist(data = {}, env) {
   const db = env.TokenD1;
   const BATCH_SIZE = 10;
-  const DAY_SECONDS = 31 * 24 * 60 * 60;
-  const DAY_MILLISECONDS = DAY_SECONDS * 1000;
+  const TARGET_LENGTH = 13;
 
-  const isMilliseconds = (value) => Math.abs(value) > 1e12;
-
-  const computeExpected = (addTime) => {
-    const num = Number(addTime);
+  const normalizeTo13Digits = (value) => {
+    const num = Number(value);
     if (!Number.isFinite(num) || num <= 0) return null;
-    const delta = isMilliseconds(num) ? DAY_MILLISECONDS : DAY_SECONDS;
-    return Math.round(num + delta);
+    const truncated = Math.trunc(num);
+    const absStr = Math.abs(truncated).toString();
+    if (absStr.length === TARGET_LENGTH) return truncated;
+    if (absStr.length < TARGET_LENGTH) {
+      const multiplier = 10 ** (TARGET_LENGTH - absStr.length);
+      return truncated * multiplier;
+    }
+    const divisor = 10 ** (absStr.length - TARGET_LENGTH);
+    return Math.trunc(truncated / divisor);
   };
 
   try {
     const { results = [] } = await db
       .prepare(
         `
-        SELECT id, Order_us_Email, AddTime, UpdTime, expected_upd
-        FROM (
-          SELECT
-            id,
-            Order_us_Email,
-            AddTime,
-            UpdTime,
-            CASE
-              WHEN CAST(AddTime AS INTEGER) > 1000000000000
-                THEN CAST(AddTime AS INTEGER) + ?
-              ELSE CAST(AddTime AS INTEGER) + ?
-            END AS expected_upd
-          FROM TeamOrder
-          WHERE AddTime IS NOT NULL
-        )
-        WHERE expected_upd IS NOT NULL
-          AND (
-            UpdTime IS NULL
-            OR CAST(UpdTime AS INTEGER) != expected_upd
-          )
-          AND Order_us_Email IS NOT NULL
+        SELECT id, Order_us_Email, AddTime, UpdTime
+        FROM TeamOrder
+        WHERE
+          (AddTime IS NOT NULL AND LENGTH(CAST(AddTime AS TEXT)) <> ?)
+          OR
+          (UpdTime IS NOT NULL AND UpdTime <> '' AND LENGTH(CAST(UpdTime AS TEXT)) <> ?)
         ORDER BY AddTime ASC
         LIMIT ?
       `,
       )
-      .bind(DAY_MILLISECONDS, DAY_SECONDS, BATCH_SIZE)
+      .bind(TARGET_LENGTH, TARGET_LENGTH, BATCH_SIZE)
       .all();
 
     if (!results.length) {
       return json({ ok: true, msg: "暂无需要校正的数据", data: [], total: 0 }, 200);
     }
 
+    const processedEmails = [];
+
     for (const row of results) {
+      const updates = {};
+      const normalizedAdd = normalizeTo13Digits(row.AddTime);
+      if (normalizedAdd !== null && normalizedAdd !== Number(row.AddTime)) {
+        updates.AddTime = normalizedAdd;
+      }
+      const normalizedUpd = normalizeTo13Digits(row.UpdTime);
+      if (normalizedUpd !== null && normalizedUpd !== Number(row.UpdTime)) {
+        updates.UpdTime = normalizedUpd;
+      }
+      if (!Object.keys(updates).length) continue;
+
+      const setClause = Object.keys(updates)
+        .map((field) => `${field} = ?`)
+        .join(', ');
       await db
-        .prepare(`UPDATE TeamOrder SET UpdTime = ? WHERE id = ?`)
-        .bind(row.expected_upd, row.id)
+        .prepare(`UPDATE TeamOrder SET ${setClause} WHERE id = ?`)
+        .bind(...Object.values(updates), row.id)
         .run();
+
+      if (row.Order_us_Email) {
+        processedEmails.push(row.Order_us_Email);
+      }
     }
 
-    const emails = results
-      .map((item) => item.Order_us_Email)
-      .filter((val) => typeof val === "string" && val.trim().length > 0);
+    if (!processedEmails.length) {
+      return json({ ok: true, msg: "暂无需要校正的数据", data: [], total: 0 }, 200);
+    }
 
     return json(
       {
         ok: true,
-        msg: `已校正 ${results.length} 条订单的到期时间`,
-        data: emails,
-        total: results.length,
+        msg: `已补齐 ${processedEmails.length} 条订单的时间戳`,
+        data: processedEmails,
+        total: processedEmails.length,
       },
       200,
     );
