@@ -519,7 +519,7 @@ export async function GenghuanTeam(data={},env){
   //锁定库存,更改订单信息,
   const stmts = [
     db.prepare("UPDATE TeamToken SET NumKey = NumKey - 1 WHERE id = ? AND NumKey > 0").bind(Team.id),
-    db.prepare("UPDATE TeamOrder SET OrderTeamID = ?,TeamOrderState = ? WHERE id = ?").bind(Teammail.TeamID,'o1',id)
+    db.prepare("UPDATE TeamOrder SET OrderTeamID = ?,TeamOrderState = ? WHERE id = ?").bind(Team.TeamID,'o1',id)
   ]
   try {
     await db.batch(stmts);
