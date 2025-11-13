@@ -1,5 +1,5 @@
 //Team发送进团邀请邮件 "standard-user"
-import { ReturnJSON } from "./Res";
+import { ReturnJSON } from "./Res.js";
 export async function TeamApiPost(data) {
   const { Email, AccToken, Role, TeamID } = data;
   if (!Email || !AccToken || !Role || !TeamID) return ReturnJSON({ ok: false, msg: "请传递完整参数" }, 200);

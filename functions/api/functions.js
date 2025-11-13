@@ -1,4 +1,5 @@
-import { ReturnJSON } from "./Res";
+import { ReturnJSON } from "./Res.js";
+import {TeamApiPost} from './TeamApi.js'
 //协议头处理,跨域
 const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), {
@@ -338,21 +339,21 @@ export async function GetTeamApi(data={},env){
   //判断是否传入订单编号
   if(int){//传入了订单编号
     TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE  id = ?").bind(int).first();
-    if(!TeamD1) return json({ ok: false, msg: "订单查询失败",data:TeamD1}, 200);
+    if(!TeamD1) return ReturnJSON({ ok: false, msg: "订单查询失败",data:TeamD1}, 200);
   }else{//未传入订单编号
     TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamOrderState = ?").bind("o1").first();
-    if(!TeamD1) return json({ ok: false, msg: "暂无等待处理的订单"}, 200);
+    if(!TeamD1) return ReturnJSON({ ok: false, msg: "暂无等待处理的订单"}, 200);
   }
   //查询订单绑定的Team团队帐号信息
   TeamToken = await db.prepare(`SELECT * FROM TeamToken WHERE TeamID = ?`).bind(TeamD1.OrderTeamID).first();
-  if(!TeamToken) return json({ ok: false, msg: "查询订单绑定的Team团队失败"}, 200);
-  //发送团队进入邀请[邮箱]
-  const JsonData = JSON.stringify({
-    Email: [TeamD1.Order_us_Email],
-    Token: TeamToken.AccToken,
-    Accid: TeamToken.TeamID,
-    role: "standard-user",
-  });
+  if(!TeamToken) return ReturnJSON({ ok: false, msg: "查询订单绑定的Team团队失败"}, 200);
+  const result = await TeamApiPost({
+    Email:[TeamD1.Order_us_Email],
+    AccToken:TeamToken.AccToken,
+    Role:"standard-user",
+    TeamID:TeamToken.TeamID
+  })
+  return ReturnJSON({ ok: false, msg: "查询订单绑定的Team团队失败"}, 200);
   try {
     const result = await fetch("http://pyapi.my91.my/TeamAdd", {
         method: "POST",
