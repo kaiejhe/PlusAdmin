@@ -19,9 +19,9 @@ export async function TeamApiPost(data) {
     });
     const res = await result.json();
     if (res.status === "success") {
-      return ReturnJSON({ ok: true, msg: "邀请成功", data: result }, 200);
+      return ReturnJSON({ ok: true, msg: "邀请成功", data: res }, 200);
     } else {
-      return ReturnJSON({ ok: false, msg: "邀请失败", data: result }, 200);
+      return ReturnJSON({ ok: false, msg: "邀请失败", data: res }, 200);
     }
   } catch (error) {
     return ReturnJSON(
