@@ -341,7 +341,7 @@ export async function GetTeamApi(data={},env){
   const chinaTime = Math.floor((new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })).getTime() + 30 * 24 * 60 * 60 * 1000) / 1000);
   //判断是否传入订单编号
   if(int){//传入了订单编号
-    TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamOrderState = ? AND id = ?").bind("o1",int).first();
+    TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE  id = ?").bind(int).first();
     if(!TeamD1) return json({ ok: false, msg: "订单查询失败",data:TeamD1}, 200);
   }else{//未传入订单编号
     TeamD1 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamOrderState = ?").bind("o1").first();
