@@ -1473,7 +1473,7 @@ async function bulkDelete() {
     saving.value = false;
   }
 }
-</script>
+
 async function handleDisableProcess(row) {
   if (!isDisableResource.value || !row?.id || saving.value) return;
   saving.value = true;
@@ -1499,3 +1499,4 @@ async function handleDisableProcess(row) {
     saving.value = false;
   }
 }
+</script>
