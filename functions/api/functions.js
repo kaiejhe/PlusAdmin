@@ -528,7 +528,7 @@ export async function EmailOFF(data={},env){
   if(!TeamToken) return ReturnJSON({ ok: false, msg: "未查询到团队信息"}, 201);
   //查询团队明下订单信息
   const Teamorder = await db.prepare("SELECT * FROM  TeamOrder WHERE OrderTeamID = ? AND TeamOrderState = ? ").bind(TeamToken.TeamID,'o4').all();
-  if(!Teamorder){
+  if(Teamorde.results.length < 1){
     await db.prepare("UPDATE disable SET state = ?,WHERE id = ?,UpdTime = ?").bind(id,'o2',GetTimedays()).all()
     return ReturnJSON({ ok: false, msg: "当前团队暂无封禁的订单信息"}, 201);
   }
