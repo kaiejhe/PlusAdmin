@@ -557,10 +557,10 @@ export async function EmailOFF(data={},env){
     if (result.ok) {
       await db.prepare(`UPDATE TeamOrder SET TeamOrderState = ? WHERE id IN (${placeholders})`).bind("o2",...orderIds).run();
       await db.prepare("UPDATE disable SET state = ?,UpdTime = ? WHERE id = ?").bind('o2',GetTimedays(),id).run();
-      return ReturnJSON({ ok: true, msg: "团队订单更新成功", data: result }, 200);
+      return ReturnJSON({ ok: true, msg: "团队订单更新成功", data:  await result.json() }, 200);
     } else {
       await db.prepare("UPDATE TeamToken SET NumKey = NumKey + ? WHERE id = ?").bind(orderCount,Kucun.id).run();
-      return ReturnJSON({ ok: false, msg: "更新失败[未知原因[202]", data: result },400);
+      return ReturnJSON({ ok: false, msg: "更新失败[未知原因[202]", data:  await result.json() },400);
     }
   } catch (error) {
     await db.prepare("UPDATE TeamToken SET NumKey = NumKey + ? WHERE id = ?").bind(orderCount,Kucun.id).run();
