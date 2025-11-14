@@ -19,6 +19,7 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'disable'  && request.method === 'POST') return Disable(data, env)
     if (msgoogle === 'TeamForlist'  && request.method === 'POST') return TeamForlist(data, env)
     if (msgoogle === 'GenghuanTeam'  && request.method === 'POST') return GenghuanTeam(data, env)
+    if (msgoogle === 'EmailOFF'  && request.method === 'POST') return EmailOFF(data, env)
     return ReturnJSON({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
@@ -514,5 +515,24 @@ export async function GenghuanTeam(data={},env){
   } catch (error) {
     return ReturnJSON({ ok: false, msg: "更换团队出现异常,请重试或联系客服"}, 200);
   }
+}
+
+//封禁团队一键换团
+export function EmailOFF(data={},env){
+  const db = env.TokenD1
+  const {id,email} = data
+  if(!id || !email) ReturnJSON({ ok: false, msg: "缺少必要参数"}, 201);
+  //查询团队信息
+  const TeamToken = await db.prepare("SELECT * FROM  TeamToken WHERE TeamEmail = ?").bind(email).first();
+  if(!Team) ReturnJSON({ ok: false, msg: "为查询到团队信息"}, 201);
+  //查询团队明下订单信息
+  const Teamorder = await db.prepare("SELECT * FROM  TeamOrder WHERE OrderTeamID = ? AND TeamOrderState = ? ").bind(TeamToken.TeamID,'o4').run();
+  if(!Teamorder){
+    await db.prepare("UPDATE disable SET state = ?,WHERE id = ?,UpdTime = ?").bind(id,'o2',GetTimedays()).run()
+    ReturnJSON({ ok: false, msg: "当前团队暂无封禁的订单信息"}, 201);
+  }
+  //查询当前库存是否充足
+  const Kucun = await const TeamToken = await db.prepare(`SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey > ? `).bind('o1',30,Teamorder.results.length).first();
+  ReturnJSON({ ok: true, msg: "当前团队暂无封禁的订单信息",data:Kucun}, 201);
 }
 
