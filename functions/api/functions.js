@@ -524,7 +524,7 @@ export async function EmailOFF(data={},env){
   if(!id || !email) return ReturnJSON({ ok: false, msg: "缺少必要参数"}, 201);
   //查询团队信息
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-  const TeamToken = await db.prepare("SELECT * FROM  TeamToken WHERE TeamEmail = ?").bind(normalizedEmail).first();
+  const TeamToken = await db.prepare("SELECT * FROM  TeamToken WHERE LOWER(TeamEmail) = ?").bind(normalizedEmail).first();
   if(!TeamToken) return ReturnJSON({ ok: false, msg: "未查询到团队信息"}, 201);
   //查询团队明下订单信息
   const Teamorder = await db.prepare("SELECT * FROM  TeamOrder WHERE OrderTeamID = ? AND TeamOrderState = ? ").bind(TeamToken.TeamID,'o4').run();
