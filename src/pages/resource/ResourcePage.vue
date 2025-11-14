@@ -129,7 +129,6 @@
               <template v-if="isTeamOrderResource">
                 <Button variant="secondary" size="sm" @click="handleSwapTeam(row)">换团</Button>
                 <Button variant="secondary" size="sm" @click="handleInvite(row)">邀请</Button>
-                <Button variant="secondary" size="sm">处理</Button>
               </template>
               <template v-else-if="isDisableResource">
                 <Button variant="secondary" size="sm" @click="handleDisableProcess(row)">处理</Button>
