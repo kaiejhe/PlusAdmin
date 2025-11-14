@@ -528,13 +528,37 @@ export async function EmailOFF(data={},env){
   if(!TeamToken) return ReturnJSON({ ok: false, msg: "未查询到团队信息"}, 201);
   //查询团队明下订单信息
   const Teamorder = await db.prepare("SELECT * FROM  TeamOrder WHERE OrderTeamID = ? AND TeamOrderState = ? ").bind(TeamToken.TeamID,'o4').all();
-  if(Teamorde.results.length < 1){
-    await db.prepare("UPDATE disable SET state = ?,WHERE id = ?,UpdTime = ?").bind(id,'o2',GetTimedays()).all()
+  if(Teamorder.results.length < 1){
+    await db.prepare("UPDATE disable SET state = ?,UpdTime = ? WHERE id = ?").bind('o2',GetTimedays(),id).run();
     return ReturnJSON({ ok: false, msg: "当前团队暂无封禁的订单信息"}, 201);
   }
   //查询当前库存是否充足
   const Kucun = await db.prepare(`SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey > ? `).bind('o1',30,Teamorder.results.length).first();
-  return ReturnJSON({ ok: false, msg: "库存不足！",data:Teamorder}, 201);
-
+  if(!Kucun) return ReturnJSON({ ok: false, msg: "库存不足！"}, 201);
+  //先锁定库存
+  const stmts = [
+    db.prepare("UPDATE TeamToken SET NumKey = NumKey - ? WHERE id = ? AND NumKey >= ?").bind(Teamorder.results.length, Kucun.id, Teamorder.results.length),
+    db.prepare("UPDATE TeamOrder SET OrderTeamID = ?,TeamOrderState = ? WHERE OrderTeamID = ?").bind(Kucun.TeamID,'o1',TeamToken.TeamID)
+  ]
+  try {
+    await db.batch(stmts);
+    const teamOrders = Teamorder?.results ?? [];
+    const Emaillist = teamOrders.map((item) => item.Order_us_Email).filter((email) => typeof email === 'string' && email.trim().length > 0);
+    const result = await TeamApiPost({
+    Email:Emaillist,
+    AccToken:Kucun.AccToken,
+    Role:"standard-user",
+    TeamID:Kucun.TeamID
+    })
+    if (result.ok) {
+      await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? WHERE OrderTeamID = ?").bind("o2",Kucun.TeamID).run();
+      await db.prepare("UPDATE disable SET state = ?,UpdTime = ? WHERE id = ?").bind('o2',GetTimedays(),id).run();
+      return ReturnJSON({ ok: true, msg: "团队订单更新成功", data: result }, 200);
+    } else {
+      return ReturnJSON({ ok: false, msg: "更新失败[未知原因[202]", data: result },200);
+    }
+  } catch (error) {
+    return ReturnJSON({ ok: false, msg: "更新失败[未知原因[202]", data: result },200);
+  }  
 }
 
