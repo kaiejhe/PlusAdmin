@@ -132,7 +132,7 @@
                 <Button variant="secondary" size="sm">处理</Button>
               </template>
               <template v-else-if="isDisableResource">
-                <Button variant="secondary" size="sm">处理</Button>
+                <Button variant="secondary" size="sm" @click="handleDisableProcess(row)">处理</Button>
               </template>
               <Button variant="outline" size="sm" @click="openEditModal(row)">编辑</Button>
               <Button variant="destructive" size="sm" @click="deleteRecord(row)">删除</Button>
@@ -1475,3 +1475,28 @@ async function bulkDelete() {
   }
 }
 </script>
+async function handleDisableProcess(row) {
+  if (!isDisableResource.value || !row?.id || saving.value) return;
+  saving.value = true;
+  setFeedback('default', `正在处理封禁记录：ID ${row.id}`);
+  try {
+    const response = await PostApi(
+      JSON.stringify({
+        msgoogle: 'EmailOFF',
+        data: {
+          id: row.id,
+          email: row.email,
+        },
+      }),
+    );
+    if (!response?.ok) {
+      throw new Error(response?.msg || '处理失败');
+    }
+    setFeedback('success', response.msg || '处理完成');
+    await fetchData();
+  } catch (error) {
+    setFeedback('error', error.message || '处理失败');
+  } finally {
+    saving.value = false;
+  }
+}
