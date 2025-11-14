@@ -521,28 +521,32 @@ export async function GenghuanTeam(data={},env){
 export async function EmailOFF(data={},env){
   const db = env.TokenD1
   const {id,email} = data
-  if(!id || !email) return ReturnJSON({ ok: false, msg: "缺少必要参数"}, 201);
+  if(!id || !email) return ReturnJSON({ ok: false, msg: "缺少必要参数"}, 400);
   //查询团队信息
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   const TeamToken = await db.prepare("SELECT * FROM  TeamToken WHERE LOWER(TeamEmail) = ?").bind(normalizedEmail).first();
-  if(!TeamToken) return ReturnJSON({ ok: false, msg: "未查询到团队信息"}, 201);
+  if(!TeamToken) return ReturnJSON({ ok: false, msg: "未查询到团队信息"}, 400);
   //查询团队明下订单信息
   const Teamorder = await db.prepare("SELECT * FROM  TeamOrder WHERE OrderTeamID = ? AND TeamOrderState = ? ").bind(TeamToken.TeamID,'o4').all();
-  if(Teamorder.results.length < 1){
+  const orders = Teamorder?.results ?? []
+  if(orders.length < 1){
     await db.prepare("UPDATE disable SET state = ?,UpdTime = ? WHERE id = ?").bind('o2',GetTimedays(),id).run();
-    return ReturnJSON({ ok: false, msg: "当前团队暂无封禁的订单信息"}, 201);
+    return ReturnJSON({ ok: true, msg: "当前团队暂无封禁的订单信息，已标记处理完成"}, 200);
   }
   //查询当前库存是否充足
-  const Kucun = await db.prepare(`SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey > ? `).bind('o1',30,Teamorder.results.length).first();
-  if(!Kucun) return ReturnJSON({ ok: false, msg: "库存不足！"}, 201);
+  const orderCount = orders.length;
+  const Kucun = await db.prepare(`SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey >= ? `).bind('o1',30,orderCount).first();
+  if(!Kucun) return ReturnJSON({ ok: false, msg: "库存不足！"}, 400);
   //先锁定库存
-  const stmts = [
-    db.prepare("UPDATE TeamToken SET NumKey = NumKey - ? WHERE id = ? AND NumKey >= ?").bind(Teamorder.results.length, Kucun.id, Teamorder.results.length),
-    db.prepare("UPDATE TeamOrder SET OrderTeamID = ?,TeamOrderState = ? WHERE OrderTeamID = ?").bind(Kucun.TeamID,'o1',TeamToken.TeamID)
-  ]
+  const decreaseRes = await db.prepare("UPDATE TeamToken SET NumKey = NumKey - ? WHERE id = ? AND NumKey >= ?").bind(orderCount, Kucun.id, orderCount).run();
+  if(!decreaseRes?.meta?.changes){
+    return ReturnJSON({ ok: false, msg: "锁定库存失败，请稍后重试" }, 400);
+  }
+  const orderIds = orders.map(item => item.id).filter(id => id !== undefined && id !== null);
+  const placeholders = orderIds.map(() => '?').join(', ');
+  await db.prepare(`UPDATE TeamOrder SET OrderTeamID = ?,TeamOrderState = ? WHERE id IN (${placeholders})`).bind(Kucun.TeamID,'o1',...orderIds).run();
   try {
-    await db.batch(stmts);
-    const teamOrders = Teamorder?.results ?? [];
+    const teamOrders = orders;
     const Emaillist = teamOrders.map((item) => item.Order_us_Email).filter((email) => typeof email === 'string' && email.trim().length > 0);
     const result = await TeamApiPost({
     Email:Emaillist,
@@ -551,14 +555,16 @@ export async function EmailOFF(data={},env){
     TeamID:Kucun.TeamID
     })
     if (result.ok) {
-      await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? WHERE OrderTeamID = ?").bind("o2",Kucun.TeamID).run();
+      await db.prepare(`UPDATE TeamOrder SET TeamOrderState = ? WHERE id IN (${placeholders})`).bind("o2",...orderIds).run();
       await db.prepare("UPDATE disable SET state = ?,UpdTime = ? WHERE id = ?").bind('o2',GetTimedays(),id).run();
       return ReturnJSON({ ok: true, msg: "团队订单更新成功", data: result }, 200);
     } else {
-      return ReturnJSON({ ok: false, msg: "更新失败[未知原因[202]", data: result },200);
+      await db.prepare("UPDATE TeamToken SET NumKey = NumKey + ? WHERE id = ?").bind(orderCount,Kucun.id).run();
+      return ReturnJSON({ ok: false, msg: "更新失败[未知原因[202]", data: result },400);
     }
   } catch (error) {
-    return ReturnJSON({ ok: false, msg: "更新失败[未知原因[202]", data: result },200);
+    await db.prepare("UPDATE TeamToken SET NumKey = NumKey + ? WHERE id = ?").bind(orderCount,Kucun.id).run();
+    return ReturnJSON({ ok: false, msg: "更新失败[未知原因[202]", data: error },400);
   }  
 }
 
