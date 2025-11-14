@@ -73,6 +73,8 @@ export const RESOURCE_CONFIG = {
       { field: 'TeamTokenState', label: '状态', type: 'select', optionsKey: 'TeamTokenState' },
     ],
     editableFields: [
+      'TeamEmail',
+      'TeamID',
       'AccToken',
       'NumKey',
       'TeamTokenState',
