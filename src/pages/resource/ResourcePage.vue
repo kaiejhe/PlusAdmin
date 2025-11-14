@@ -129,6 +129,10 @@
               <template v-if="isTeamOrderResource">
                 <Button variant="secondary" size="sm" @click="handleSwapTeam(row)">换团</Button>
                 <Button variant="secondary" size="sm" @click="handleInvite(row)">邀请</Button>
+                <Button variant="secondary" size="sm">处理</Button>
+              </template>
+              <template v-else-if="isDisableResource">
+                <Button variant="secondary" size="sm">处理</Button>
               </template>
               <Button variant="outline" size="sm" @click="openEditModal(row)">编辑</Button>
               <Button variant="destructive" size="sm" @click="deleteRecord(row)">删除</Button>
@@ -529,6 +533,7 @@ const isTeamTokenResource = computed(() => config.value?.table === 'TeamToken');
 const isPlusEmailResource = computed(() => config.value?.table === 'PlusEmail');
 const isTeamCardResource = computed(() => config.value?.table === 'TeamCard');
 const isTeamOrderResource = computed(() => config.value?.table === 'TeamOrder');
+const isDisableResource = computed(() => config.value?.table === 'disable');
 const bulkDialogDescription = computed(() => {
   if (!config.value) return '';
   if (isTeamCardResource.value) {
