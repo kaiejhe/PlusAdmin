@@ -518,7 +518,7 @@ export async function GenghuanTeam(data={},env){
 }
 
 //封禁团队一键换团
-export function EmailOFF(data={},env){
+export async function EmailOFF(data={},env){
   const db = env.TokenD1
   const {id,email} = data
   if(!id || !email) ReturnJSON({ ok: false, msg: "缺少必要参数"}, 201);
