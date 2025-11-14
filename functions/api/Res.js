@@ -10,7 +10,7 @@ export const ReturnJSON = (data, status = 200, headers = {}) =>
       ...headers,
     },
   });
-  //生成时间戳方法
+//生成时间戳方法
 export function GetTimedays(Time = 0, days = 0){
   let baseMs;
   if(Time){

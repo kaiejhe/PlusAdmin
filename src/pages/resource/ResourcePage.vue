@@ -1096,6 +1096,8 @@ async function applyResourceSpecificTransforms(payload) {
     payload.AccToken = accessToken;
     payload.TeamEmail = teamEmail;
     payload.TeamID = teamId;
+    formModel.TeamEmail = teamEmail;
+    formModel.TeamID = teamId;
     return;
   }
 

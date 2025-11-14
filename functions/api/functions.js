@@ -510,10 +510,9 @@ export async function GenghuanTeam(data={},env){
   ]
   try {
     await db.batch(stmts);
-    return ReturnJSON({ ok: true, msg: "团队更换成功,请发起进团邀请"}, 200);
+    return ReturnJSON({ ok: true, msg: "团队更换成功,请重新发起进团邀请!"}, 200);
   } catch (error) {
-    return ReturnJSON({ ok: false, msg: "更换团队异常,请重试或联系客服"}, 200);
+    return ReturnJSON({ ok: false, msg: "更换团队出现异常,请重试或联系客服"}, 200);
   }
 }
-
 
