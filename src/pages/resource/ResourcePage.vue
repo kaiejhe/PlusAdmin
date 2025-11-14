@@ -732,13 +732,17 @@ function resetSearchModel() {
   });
 }
 
-function getStatusOptions(optionsKey) {
+function getStatusOptions(source) {
+  if (!source) return [];
+  const optionsKey = typeof source === 'string'
+    ? source
+    : source.optionsKey || source.key;
   if (!optionsKey) return [];
   return STATUS_OPTIONS[optionsKey] || [];
 }
 
-function getStatusLabel(fieldKey, value) {
-  const options = getStatusOptions(fieldKey);
+function getStatusLabel(fieldMeta, value) {
+  const options = getStatusOptions(fieldMeta);
   const match = options.find((item) => item.value === value);
   return match ? match.label : null;
 }
@@ -784,7 +788,7 @@ function formatValue(field, value) {
   if (field?.type === 'Datetime') {
     return formatTimestamp(value);
   }
-  const statusLabel = getStatusLabel(field.key, value);
+  const statusLabel = getStatusLabel(field, value);
   if (statusLabel) return statusLabel;
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
