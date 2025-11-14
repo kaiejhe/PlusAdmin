@@ -521,18 +521,18 @@ export async function GenghuanTeam(data={},env){
 export async function EmailOFF(data={},env){
   const db = env.TokenD1
   const {id,email} = data
-  if(!id || !email) ReturnJSON({ ok: false, msg: "缺少必要参数"}, 201);
+  if(!id || !email) return ReturnJSON({ ok: false, msg: "缺少必要参数"}, 201);
   //查询团队信息
   const TeamToken = await db.prepare("SELECT * FROM  TeamToken WHERE TeamEmail = ?").bind(email).first();
-  if(!TeamToken) ReturnJSON({ ok: false, msg: "为查询到团队信息"}, 201);
+  if(!TeamToken) return ReturnJSON({ ok: false, msg: "为查询到团队信息"}, 201);
   //查询团队明下订单信息
   const Teamorder = await db.prepare("SELECT * FROM  TeamOrder WHERE OrderTeamID = ? AND TeamOrderState = ? ").bind(TeamToken.TeamID,'o4').run();
   if(!Teamorder){
     await db.prepare("UPDATE disable SET state = ?,WHERE id = ?,UpdTime = ?").bind(id,'o2',GetTimedays()).run()
-    ReturnJSON({ ok: false, msg: "当前团队暂无封禁的订单信息"}, 201);
+    return ReturnJSON({ ok: false, msg: "当前团队暂无封禁的订单信息"}, 201);
   }
   //查询当前库存是否充足
   const Kucun = await db.prepare(`SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey > ? `).bind('o1',30,Teamorder.results.length).first();
-  ReturnJSON({ ok: true, msg: "当前团队暂无封禁的订单信息",data:Kucun}, 201);
+  return ReturnJSON({ ok: true, msg: "当前团队暂无封禁的订单信息",data:Kucun}, 201);
 }
 
