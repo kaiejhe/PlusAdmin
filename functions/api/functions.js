@@ -527,9 +527,9 @@ export async function EmailOFF(data={},env){
   const TeamToken = await db.prepare("SELECT * FROM  TeamToken WHERE LOWER(TeamEmail) = ?").bind(normalizedEmail).first();
   if(!TeamToken) return ReturnJSON({ ok: false, msg: "未查询到团队信息"}, 201);
   //查询团队明下订单信息
-  const Teamorder = await db.prepare("SELECT * FROM  TeamOrder WHERE OrderTeamID = ? AND TeamOrderState = ? ").bind(TeamToken.TeamID,'o4').run();
+  const Teamorder = await db.prepare("SELECT * FROM  TeamOrder WHERE OrderTeamID = ? AND TeamOrderState = ? ").bind(TeamToken.TeamID,'o4').all();
   if(!Teamorder){
-    await db.prepare("UPDATE disable SET state = ?,WHERE id = ?,UpdTime = ?").bind(id,'o2',GetTimedays()).run()
+    await db.prepare("UPDATE disable SET state = ?,WHERE id = ?,UpdTime = ?").bind(id,'o2',GetTimedays()).all()
     return ReturnJSON({ ok: false, msg: "当前团队暂无封禁的订单信息"}, 201);
   }
   //查询当前库存是否充足
