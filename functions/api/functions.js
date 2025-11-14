@@ -534,6 +534,6 @@ export async function EmailOFF(data={},env){
   }
   //查询当前库存是否充足
   const Kucun = await db.prepare(`SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey > ? `).bind('o1',30,Teamorder.results.length).first();
-  return ReturnJSON({ ok: true, msg: "当前团队暂无封禁的订单信息",data:Kucun}, 201);
+  return ReturnJSON({ ok: true, msg: "库存不足！",data:Kucun}, 201);
 }
 
