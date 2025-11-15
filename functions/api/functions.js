@@ -308,8 +308,8 @@ export async function TeamEmail(request, env){
   const stmts = [
     db.prepare("UPDATE TeamToken SET NumKey = NumKey - 1 WHERE id = ? AND NumKey > 0").bind(TeamToken.id),
     db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind("o2",GetTimedays(),Card),
-    db.prepare( `INSERT INTO TeamOrder (Order_us_Email, AfterSales, TeamCard, TeamOrderState,AddTime,OrderTeamID) VALUES (?, ?, ?,?,?,?)`)
-      .bind(Email, CardRes.AfterSales, Card, 'o1',GetTimedays(),TeamToken.TeamID)
+    db.prepare( `INSERT INTO TeamOrder (Order_us_Email, AfterSales, TeamCard, TeamOrderState,AddTime,UpdTime,OrderTeamID) VALUES (?, ?, ?,?,?,?,?)`)
+      .bind(Email, CardRes.AfterSales, Card, 'o1',GetTimedays(),GetTimedays(30),TeamToken.TeamID)
   ]
   try {
     await db.batch(stmts);
@@ -343,10 +343,10 @@ export async function GetTeamApi(data={},env){
     TeamID:TeamToken.TeamID
   })
   if(result.ok){
-    await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? , UpdTime = ? WHERE id = ?")
-        .bind('o2',GetTimedays(TeamD1.AddTime,30),TeamD1.id).run()
+    await db.prepare("UPDATE TeamOrder SET TeamOrderState = ? WHERE id = ?")
+        .bind('o2',TeamD1.id).run()
     const Teamint = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(TeamD1.id).first();
-    return ReturnJSON({ ok: true, msg: "邀请成功",data:Teamint }, 200);
+    return ReturnJSON({ ok: true, msg: "邀请成功",data:result }, 200);
   }else{
     return ReturnJSON({ ok: false, msg: "邀请失败[未知原因[202]",data:result }, 200);
   }
