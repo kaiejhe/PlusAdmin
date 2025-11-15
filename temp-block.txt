@@ -1,0 +1,40 @@
+  let teamEmail = baseEmail;
+  let teamId = baseTeamId;
+
+  if (trimmed.startsWith('{')) {
+    let parsed;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch (error) {
+      if (options?.silent) {
+        return null;
+      }
+      throw new Error('团队密钥格式错误，请粘贴完整 JSON 文本');
+    }
+    const parsedToken = String(parsed?.accessToken ?? parsed?.token ?? '').trim();
+    const parsedEmail = String(parsed?.user?.email ?? parsed?.email ?? '').trim();
+    const parsedTeamId = String(parsed?.account?.id ?? parsed?.teamId ?? '').trim();
+    if (parsedToken) accessToken = parsedToken;
+    if (parsedEmail) teamEmail = parsedEmail;
+    if (parsedTeamId) teamId = parsedTeamId;
+  }
+
+  return { accessToken, teamEmail, teamId };
+}
+
+async function applyResourceSpecificTransforms(payload) {
+  const table = config.value?.table;
+  if (table === 'TeamToken') {
+    const rawInput = (formModel.AccToken ?? '').trim();
+    if (!rawInput) {
+      throw new Error('请填写团队密�?);
+    }
+    let accessToken = rawInput;
+    let teamEmail = (formModel.TeamEmail ?? '').trim() || editingRecord.value?.TeamEmail || '';
+    let teamId = (formModel.TeamID ?? '').trim() || editingRecord.value?.TeamID || '';
+    if (rawInput.startsWith('{')) {
+      let parsed;
+      try {
+        parsed = JSON.parse(rawInput);
+      } catch (error) {
+        throw new Error('团队密钥格式错误，请粘贴完整�?JSON 文本');

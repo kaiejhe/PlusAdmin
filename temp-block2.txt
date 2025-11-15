@@ -1,0 +1,40 @@
+
+  return { accessToken, teamEmail, teamId };
+}
+
+async function applyResourceSpecificTransforms(payload) {
+  const table = config.value?.table;
+  if (table === 'TeamToken') {
+    const rawInput = (formModel.AccToken ?? '').trim();
+    if (!rawInput) {
+      throw new Error('请填写团队密�?);
+    }
+    let accessToken = rawInput;
+    let teamEmail = (formModel.TeamEmail ?? '').trim() || editingRecord.value?.TeamEmail || '';
+    let teamId = (formModel.TeamID ?? '').trim() || editingRecord.value?.TeamID || '';
+    if (rawInput.startsWith('{')) {
+      let parsed;
+      try {
+        parsed = JSON.parse(rawInput);
+      } catch (error) {
+        throw new Error('团队密钥格式错误，请粘贴完整�?JSON 文本');
+      }
+      const parsedToken = String(parsed?.accessToken ?? '').trim();
+      const parsedEmail = String(parsed?.user?.email ?? '').trim();
+      const parsedTeamId = String(parsed?.account?.id ?? '').trim();
+      if (parsedToken) accessToken = parsedToken;
+      if (parsedEmail) teamEmail = parsedEmail;
+      if (parsedTeamId) teamId = parsedTeamId;
+    }
+    if (!accessToken) {
+      throw new Error('无法获取 accessToken，请检查密钥内�?);
+    }
+    if (!teamEmail || !teamId) {
+      throw new Error('无法解析团队邮箱或团队编号，请确认信息正�?);
+    }
+    payload.AccToken = accessToken;
+    payload.TeamEmail = teamEmail;
+    payload.TeamID = teamId;
+    formModel.TeamEmail = teamEmail;
+    formModel.TeamID = teamId;
+    return;
