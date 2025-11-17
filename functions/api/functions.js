@@ -575,7 +575,7 @@ export async function EmailOFF(data={},env){
 }
 
 //通过邮箱查询订单信息
-export function Teammail(data={},env) {
+export async function Teammail(data={},env) {
   const db = env.TokenD1
   const {email} = data
   const normalizedEmail = typeof Email === 'string' ? Email.trim() : ''
