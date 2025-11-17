@@ -300,7 +300,7 @@ export async function TeamEmail(request, env){
   if(CardRes.TeamCardState!='o1'){
     if(CardRes.TeamCardState=='o2') return ReturnJSON({ ok: false, msg: "兑换码已使用!" }, 200);
     if(CardRes.TeamCardState=='o3') return ReturnJSON({ ok: false, msg: "兑换码已失效!" }, 200);
-    return ReturnJSON({ ok: false, msg: "当前页面不存在",data:CardRes }, 200); 
+    return ReturnJSON({ ok: false, msg: "请求参数异常!",data:CardRes }, 200); 
   }
   const TeamToken = await db.prepare(`SELECT * FROM TeamToken WHERE TeamTokenState = ? AND AfterSales = ? AND NumKey > 0 `)
       .bind("o1", CardRes.AfterSales).first();
@@ -314,7 +314,13 @@ export async function TeamEmail(request, env){
   try {
     await db.batch(stmts);
     const GetOrder = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
-    return ReturnJSON({ ok: true, msg: "订单创建成功",data:GetOrder }, 200);
+    if(GetOrder){
+      const ApiTeam = await  GetTeamApi({int:GetOrder.id},env)
+      const GetOrder2 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
+      return ReturnJSON({ ok: true, msg: "发生邀请成功",data:GetOrder2 }, 200);
+    }else{
+      return ReturnJSON({ ok: true, msg: "发生邀请失败",data:GetOrder }, 200);
+    }
   } catch (error) {
     return ReturnJSON({ ok: false, msg: "订单创建失败"}, 200);
   }
