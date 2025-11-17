@@ -317,7 +317,7 @@ export async function TeamEmail(request, env){
     if(GetOrder){
       const ApiTeam = await  GetTeamApi({int:GetOrder.id},env)
       const GetOrder2 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
-      return ReturnJSON({ ok: true, msg: "发生邀请成功",data:GetOrder2 }, 200);
+      return ReturnJSON({ ok: true, msg: "发送邀请成功",data:GetOrder2 }, 200);
     }else{
       return ReturnJSON({ ok: true, msg: "发生邀请失败",data:GetOrder }, 200);
     }
