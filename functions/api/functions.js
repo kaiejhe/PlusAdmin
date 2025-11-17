@@ -293,12 +293,16 @@ export async function Card(request, db){
 export async function TeamEmail(request, env){
   const { Card,Email } = request;
   const db = env.TokenD1
+  let GetOrder = {}
   if(!Card || !Email) return ReturnJSON({ ok: false, msg: "参数异常!",Card:Card,Email:Email }, 200);
-  const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?")
-  .bind(Card).first();
+  const normalizedEmail = typeof Email === 'string' ? Email.trim() : ''
+  const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?").bind(Card).first();
   if(!CardRes) return ReturnJSON({ ok: false, msg: "兑换码不存在" }, 200);
   if(CardRes.TeamCardState!='o1'){
-    if(CardRes.TeamCardState=='o2') return ReturnJSON({ ok: false, msg: "兑换码已使用!" }, 200);
+    if(CardRes.TeamCardState=='o2'){
+      GetOrder = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ? AND LOWER(Order_us_Email) = ?").bind(Card,normalizedEmail).first();
+      return ReturnJSON({ ok: false, msg: "兑换码已使用!",data:GetOrder }, 200);
+    }
     if(CardRes.TeamCardState=='o3') return ReturnJSON({ ok: false, msg: "兑换码已失效!" }, 200);
     return ReturnJSON({ ok: false, msg: "请求参数异常!",data:CardRes }, 200); 
   }
@@ -309,17 +313,17 @@ export async function TeamEmail(request, env){
     db.prepare("UPDATE TeamToken SET NumKey = NumKey - 1 WHERE id = ? AND NumKey > 0").bind(TeamToken.id),
     db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind("o2",GetTimedays(),Card),
     db.prepare( `INSERT INTO TeamOrder (Order_us_Email, AfterSales, TeamCard, TeamOrderState,AddTime,UpdTime,OrderTeamID) VALUES (?, ?, ?,?,?,?,?)`)
-      .bind(Email, CardRes.AfterSales, Card, 'o1',GetTimedays(),GetTimedays(30),TeamToken.TeamID)
+      .bind(normalizedEmail, CardRes.AfterSales, Card, 'o1',GetTimedays(),GetTimedays(30),TeamToken.TeamID)
   ]
   try {
     await db.batch(stmts);
-    const GetOrder = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
+    GetOrder = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
     if(GetOrder){
       const ApiTeam = await  GetTeamApi({int:GetOrder.id},env)
-      const GetOrder2 = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
-      return ReturnJSON({ ok: true, msg: "发送邀请成功",data:GetOrder2 }, 200);
+      GetOrder = await db.prepare("SELECT * FROM  TeamOrder WHERE TeamCard = ?").bind(Card).first();
+      return ReturnJSON({ ok: true, msg: "发送邀请成功",data:GetOrder }, 200);
     }else{
-      return ReturnJSON({ ok: true, msg: "发生邀请失败",data:GetOrder }, 200);
+      return ReturnJSON({ ok: true, msg: "发送邀请失败",data:GetOrder }, 200);
     }
   } catch (error) {
     return ReturnJSON({ ok: false, msg: "订单创建失败"}, 200);
