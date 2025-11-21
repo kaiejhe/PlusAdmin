@@ -412,93 +412,39 @@ export async function Disable(data={},env){
   }
 }
 
-//重复的订单数据处理方案：补足 AddTime / UpdTime 为 13 位时间戳
+// 批量查询Team订单信息
 export async function TeamForlist(data = {}, env) {
   const db = env.TokenD1;
-  const BATCH_SIZE = 10;
-  const TARGET_LENGTH = 13;
-
-  const normalizeTo13Digits = (value) => {
-    const num = Number(value);
-    if (!Number.isFinite(num) || num <= 0) return null;
-    const truncated = Math.trunc(num);
-    const absStr = Math.abs(truncated).toString();
-    if (absStr.length === TARGET_LENGTH) return truncated;
-    if (absStr.length < TARGET_LENGTH) {
-      const multiplier = 10 ** (TARGET_LENGTH - absStr.length);
-      return truncated * multiplier;
-    }
-    const divisor = 10 ** (absStr.length - TARGET_LENGTH);
-    return Math.trunc(truncated / divisor);
-  };
-
   try {
     const { results = [] } = await db
       .prepare(
         `
-        SELECT id, Order_us_Email, AddTime, UpdTime
+        SELECT
+          Order_us_Email AS email,
+          TeamCard AS redeemCode,
+          AddTime AS startTime,
+          UpdTime AS endTime
         FROM TeamOrder
-        WHERE
-          (AddTime IS NOT NULL AND LENGTH(CAST(AddTime AS TEXT)) <> ?)
-          OR
-          (UpdTime IS NOT NULL AND UpdTime <> '' AND LENGTH(CAST(UpdTime AS TEXT)) <> ?)
-        ORDER BY AddTime ASC
-        LIMIT ?
+        ORDER BY AddTime DESC
       `,
       )
-      .bind(TARGET_LENGTH, TARGET_LENGTH, BATCH_SIZE)
       .all();
 
-    if (!results.length) {
-      return ReturnJSON({ ok: true, msg: "暂无需要校正的数据", data: [], total: 0 }, 200);
-    }
-
-    const processedEmails = [];
-
-    for (const row of results) {
-      const updates = {};
-      const normalizedAdd = normalizeTo13Digits(row.AddTime);
-      if (normalizedAdd !== null && normalizedAdd !== Number(row.AddTime)) {
-        updates.AddTime = normalizedAdd;
-      }
-      const normalizedUpd = normalizeTo13Digits(row.UpdTime);
-      if (normalizedUpd !== null && normalizedUpd !== Number(row.UpdTime)) {
-        updates.UpdTime = normalizedUpd;
-      }
-      if (!Object.keys(updates).length) continue;
-
-      const setClause = Object.keys(updates)
-        .map((field) => `${field} = ?`)
-        .join(', ');
-      await db
-        .prepare(`UPDATE TeamOrder SET ${setClause} WHERE id = ?`)
-        .bind(...Object.values(updates), row.id)
-        .run();
-
-      if (row.Order_us_Email) {
-        processedEmails.push(row.Order_us_Email);
-      }
-    }
-
-    if (!processedEmails.length) {
-      return ReturnJSON({ ok: true, msg: "暂无需要校正的数据", data: [], total: 0 }, 200);
-    }
+    const dataList = results.map((item) => ({
+      email: item.email,
+      redeemCode: item.redeemCode,
+      startTime: item.startTime,
+      endTime: item.endTime,
+    }));
 
     return ReturnJSON(
-      {
-        ok: true,
-        msg: `已补齐 ${processedEmails.length} 条订单的时间戳`,
-        data: processedEmails,
-        total: processedEmails.length,
-      },
+      { ok: true, msg: "Team orders fetched", data: dataList, total: dataList.length },
       200,
     );
   } catch (error) {
-    return ReturnJSON({ ok: false, msg: "处理失败", error: String(error) }, 500);
+    return ReturnJSON({ ok: false, msg: "Team orders query failed", error: String(error) }, 500);
   }
 }
-
-//个人申请更换团队
 export async function GenghuanTeam(data={},env){
   const db = env.TokenD1
   const {id} = data
