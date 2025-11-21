@@ -528,7 +528,7 @@ export async function EmailOFF(data={},env){
 export async function Teammail(data={},env) {
   const db = env.TokenD1
   const {email} = data
-  const normalizedEmail = typeof Email === 'string' ? Email.trim() : ''
+  const normalizedEmail = typeof email === 'string' ? email.trim() : ''
   const TeamToken = await db.prepare("SELECT * FROM  TeamOrder WHERE LOWER(Order_us_Email) = ?").bind(normalizedEmail).all();
   return ReturnJSON({ ok: true,data: TeamToken },200);
 }
