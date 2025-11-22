@@ -545,6 +545,7 @@ export async function ADDTime(data={},env) {
         WHERE UpdTime IS NOT NULL
           AND UpdTime <> ''
           AND CAST(UpdTime AS INTEGER) <= ?
+          AND TeamOrderState != 'o3'
       `,
       )
       .bind(nowMs)
