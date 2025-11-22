@@ -537,27 +537,27 @@ export async function Teammail(data={},env) {
 export async function ADDTime(data={},env) {
   const db = env.TokenD1
   const {id,Card} = data
-  if(!Card || !id) return ReturnJSON({ ok: false,msg:"missing id or card"},200);
-  const TeamOrder = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(id).first();
-  if(!TeamOrder) return ReturnJSON({ ok: false,msg:"order not found"},200);
+  if(!Card || !id) return ReturnJSON({ ok: false,msg:"缺少必要参数"},200);
+  const TeamRes = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(id).first();
+  if(!TeamRes) return ReturnJSON({ ok: false,msg:"订单查询失败"},200);
   const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?").bind(Card).first();
-  if(!CardRes) return ReturnJSON({ ok: false,msg:"card not found"},200);
+  if(!CardRes) return ReturnJSON({ ok: false,msg:"兑换码不存在"},200);
   if(CardRes.TeamCardState!='o1'){
-    if(CardRes.TeamCardState==='o2') return ReturnJSON({ ok: false,msg:"card already used"},200);
-    if(CardRes.TeamCardState==='o3') return ReturnJSON({ ok: false,msg:"card disabled"},200);
-    return ReturnJSON({ ok: false,msg:"card state invalid"},200);
+    if(CardRes.TeamCardState==='o2') return ReturnJSON({ ok: false,msg:"兑换码已使用"},200);
+    if(CardRes.TeamCardState==='o3') return ReturnJSON({ ok: false,msg:"兑换码已失效"},200);
+    return ReturnJSON({ ok: false,msg:"兑换码查询查询出错"},200);
   }
   const extendMs = Number(CardRes.AfterSales || 0) * 24 * 60 * 60 * 1000;
   const newExpire = Number(TeamOrder.UpdTime || 0) + extendMs;
   const stmts = [
-    db.prepare("UPDATE TeamOrder SET UpdTime = ? WHERE id = ?").bind(newExpire,id),
+    db.prepare("UPDATE TeamOrder SET UpdTime = ?,TeamCard = ? WHERE id = ?").bind(newExpire,Card,id),
     db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind('o2',GetTimedays(),Card)
   ]
   try {
     await db.batch(stmts);
     const Token = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(id).first();
-    return ReturnJSON({ ok: true,msg:"extended successfully",data:Token},200);
+    return ReturnJSON({ ok: true,msg:"添加使用时长成功",data:Token},200);
   } catch (error) {  
-    return ReturnJSON({ ok: false,msg:"update failed",error:String(error)},200);
+    return ReturnJSON({ ok: false,msg:"添加使用时长失败",error:String(error)},200);
   }
 }
