@@ -17,4 +17,12 @@ export function GetTimedays(Time = 0){
     ).getTime();
   return baseMs + Time * 24 * 60 * 60 * 1000;
 }
+//生成时间戳方法二
+export function GetTimedaysTime(Time){
+  const baseMs = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+    ).getTime();
+  return baseMs + 30 * 24 * 60 * 60 * 1000;
+}
+
 

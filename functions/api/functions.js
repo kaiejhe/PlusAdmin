@@ -20,6 +20,7 @@ export async function onRequestPost({ request, env }) {
     if (msgoogle === 'TeamForlist'  && request.method === 'POST') return TeamForlist(data, env)
     if (msgoogle === 'GenghuanTeam'  && request.method === 'POST') return GenghuanTeam(data, env)
     if (msgoogle === 'EmailOFF'  && request.method === 'POST') return EmailOFF(data, env)
+    if (msgoogle === 'ADDTime'  && request.method === 'POST') return ADDTime(data, env)
     return ReturnJSON({ ok:false, msg:'当前页面不存在' }, 404)
 }
 
@@ -531,4 +532,32 @@ export async function Teammail(data={},env) {
   const normalizedEmail = typeof email === 'string' ? email.trim() : ''
   const TeamToken = await db.prepare("SELECT * FROM  TeamOrder WHERE LOWER(Order_us_Email) = ?").bind(normalizedEmail).all();
   return ReturnJSON({ ok: true,data: TeamToken },200);
+}
+//增加使用时长
+export async function ADDTime(data={},env) {
+  const db = env.TokenD1
+  const {id,Card} = data
+  if(!Card || !id) return ReturnJSON({ ok: false,msg:"missing id or card"},200);
+  const TeamOrder = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(id).first();
+  if(!TeamOrder) return ReturnJSON({ ok: false,msg:"order not found"},200);
+  const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?").bind(Card).first();
+  if(!CardRes) return ReturnJSON({ ok: false,msg:"card not found"},200);
+  if(CardRes.TeamCardState!='o1'){
+    if(CardRes.TeamCardState==='o2') return ReturnJSON({ ok: false,msg:"card already used"},200);
+    if(CardRes.TeamCardState==='o3') return ReturnJSON({ ok: false,msg:"card disabled"},200);
+    return ReturnJSON({ ok: false,msg:"card state invalid"},200);
+  }
+  const extendMs = Number(CardRes.AfterSales || 0) * 24 * 60 * 60 * 1000;
+  const newExpire = Number(TeamOrder.UpdTime || 0) + extendMs;
+  const stmts = [
+    db.prepare("UPDATE TeamOrder SET UpdTime = ? WHERE id = ?").bind(newExpire,id),
+    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind('o2',GetTimedays(),Card)
+  ]
+  try {
+    await db.batch(stmts);
+    const Token = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(id).first();
+    return ReturnJSON({ ok: true,msg:"extended successfully",data:Token},200);
+  } catch (error) {  
+    return ReturnJSON({ ok: false,msg:"update failed",error:String(error)},200);
+  }
 }
