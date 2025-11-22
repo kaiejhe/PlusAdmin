@@ -552,7 +552,7 @@ export async function ADDTime(data={},env) {
       .all();
     const expired = res?.results ?? [];
     if (!expired.length) {
-      return ReturnJSON({ ok: true, msg: "No expired orders", data: [], total: 0 }, 200);
+      return ReturnJSON({ ok: true, msg: "暂无到期订单", data: [], total: 0 }, 200);
     }
     const ids = expired.map((item) => item.id).filter((id) => id !== undefined && id !== null);
     if (ids.length) {
