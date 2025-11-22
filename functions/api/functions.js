@@ -553,8 +553,21 @@ export async function ADDTime(data={},env) {
     if (!expired.length) {
       return ReturnJSON({ ok: true, msg: "No expired orders", data: [], total: 0 }, 200);
     }
+    const ids = expired.map((item) => item.id).filter((id) => id !== undefined && id !== null);
+    if (ids.length) {
+      const placeholders = ids.map(() => '?').join(', ');
+      await db
+        .prepare(`UPDATE TeamOrder SET TeamOrderState = 'o3' WHERE id IN (${placeholders})`)
+        .bind(...ids)
+        .run();
+    }
+    const updated = await db
+      .prepare(`SELECT * FROM TeamOrder WHERE id IN (${ids.map(() => '?').join(', ')})`)
+      .bind(...ids)
+      .all();
+    const updatedList = updated?.results ?? [];
     return ReturnJSON(
-      { ok: true, msg: "Expired orders found", data: expired, total: expired.length },
+      { ok: true, msg: "Expired orders updated", data: updatedList, total: updatedList.length },
       200,
     );
   } catch (error) {
