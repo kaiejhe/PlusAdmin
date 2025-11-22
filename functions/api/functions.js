@@ -548,7 +548,7 @@ export async function ADDTime(data={},env) {
     return ReturnJSON({ ok: false,msg:"兑换码查询查询出错"},200);
   }
   const extendMs = Number(CardRes.AfterSales || 0) * 24 * 60 * 60 * 1000;
-  const newExpire = Number(TeamOrder.UpdTime || 0) + extendMs;
+  const newExpire = Number(TeamRes.UpdTime || 0) + extendMs;
   const stmts = [
     db.prepare("UPDATE TeamOrder SET UpdTime = ?,TeamCard = ? WHERE id = ?").bind(newExpire,Card,id),
     db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind('o2',GetTimedays(),Card)
