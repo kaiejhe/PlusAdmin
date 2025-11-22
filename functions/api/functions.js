@@ -536,28 +536,28 @@ export async function Teammail(data={},env) {
 //增加使用时长
 export async function ADDTime(data={},env) {
   const db = env.TokenD1
-  const {id,Card} = data
-  if(!Card || !id) return ReturnJSON({ ok: false,msg:"缺少必要参数"},200);
-  const TeamRes = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(id).first();
-  if(!TeamRes) return ReturnJSON({ ok: false,msg:"订单查询失败"},200);
-  const CardRes = await db.prepare("SELECT * FROM  TeamCard WHERE TeamCard = ?").bind(Card).first();
-  if(!CardRes) return ReturnJSON({ ok: false,msg:"兑换码不存在"},200);
-  if(CardRes.TeamCardState!='o1'){
-    if(CardRes.TeamCardState==='o2') return ReturnJSON({ ok: false,msg:"兑换码已使用"},200);
-    if(CardRes.TeamCardState==='o3') return ReturnJSON({ ok: false,msg:"兑换码已失效"},200);
-    return ReturnJSON({ ok: false,msg:"兑换码查询查询出错"},200);
-  }
-  const extendMs = Number(CardRes.AfterSales || 0) * 24 * 60 * 60 * 1000;
-  const newExpire = Number(TeamRes.UpdTime || 0) + extendMs;
-  const stmts = [
-    db.prepare("UPDATE TeamOrder SET UpdTime = ?,TeamCard = ? WHERE id = ?").bind(newExpire,Card,id),
-    db.prepare("UPDATE TeamCard SET TeamCardState = ?,UpdTime = ? WHERE TeamCard = ? AND TeamCardState = 'o1'").bind('o2',GetTimedays(),Card)
-  ]
+  const nowMs = GetTimedays();
   try {
-    await db.batch(stmts);
-    const Token = await db.prepare("SELECT * FROM  TeamOrder WHERE id = ?").bind(id).first();
-    return ReturnJSON({ ok: true,msg:"添加使用时长成功",data:Token},200);
-  } catch (error) {  
-    return ReturnJSON({ ok: false,msg:"添加使用时长失败",error:String(error)},200);
+    const res = await db
+      .prepare(
+        `
+        SELECT * FROM TeamOrder
+        WHERE UpdTime IS NOT NULL
+          AND UpdTime <> ''
+          AND CAST(UpdTime AS INTEGER) <= ?
+      `,
+      )
+      .bind(nowMs)
+      .all();
+    const expired = res?.results ?? [];
+    if (!expired.length) {
+      return ReturnJSON({ ok: true, msg: "No expired orders", data: [], total: 0 }, 200);
+    }
+    return ReturnJSON(
+      { ok: true, msg: "Expired orders found", data: expired, total: expired.length },
+      200,
+    );
+  } catch (error) {
+    return ReturnJSON({ ok: false, msg: "Query expired orders failed", error: String(error) }, 500);
   }
 }
