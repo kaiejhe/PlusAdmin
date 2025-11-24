@@ -1243,7 +1243,9 @@ function appendTimestamps(payload) {
       payload.created_at = Math.floor(Date.now() / 1000);
     }
   }
-  if (fieldMetaMap.value.UpdTime && payload.UpdTime === undefined) {
+  const skipTeamOrderExpiry =
+    isEditing.value && config.value?.table === 'TeamOrder';
+  if (!skipTeamOrderExpiry && fieldMetaMap.value.UpdTime && payload.UpdTime === undefined) {
     payload.UpdTime = Date.now();
   }
   if (fieldMetaMap.value.updated_at && payload.updated_at === undefined) {
@@ -1304,6 +1306,11 @@ async function submitForm() {
         config.value?.table === 'PlusEmail' &&
         field.key === 'EmailTxt' &&
         !isEditing.value;
+      const skipTeamOrderExpiry =
+        isEditing.value && config.value?.table === 'TeamOrder' && field.key === 'UpdTime';
+      if (skipTeamOrderExpiry) {
+        return;
+      }
       if (skipEmailKeyAutoFill) {
         return;
       }
@@ -1317,6 +1324,10 @@ async function submitForm() {
       }
       payload[field.key] = normalizeFieldValue(field, raw);
     });
+
+    if (isEditing.value && config.value?.table === 'TeamOrder') {
+      delete payload.UpdTime;
+    }
 
     await applyResourceSpecificTransforms(payload);
     appendTimestamps(payload);

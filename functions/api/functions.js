@@ -414,7 +414,55 @@ export async function Disable(data={},env){
 }
 
 // 批量查询Team订单信息
+//Team ????????????? = ???? + 31 ?
 export async function TeamForlist(data = {}, env) {
+  const db = env.TokenD1;
+  const TARGET_SPAN_MS = 31 * 24 * 60 * 60 * 1000;
+  try {
+    const { results = [] } = await db
+      .prepare(
+        `
+        SELECT id, AddTime, UpdTime
+        FROM TeamOrder
+        WHERE AddTime IS NOT NULL
+      `,
+      )
+      .all();
+
+    const toFix = [];
+    for (const row of results) {
+      const addMs = Number(row.AddTime);
+      if (!Number.isFinite(addMs)) continue;
+      const expected = addMs + TARGET_SPAN_MS;
+      const current = row.UpdTime === null || row.UpdTime === undefined ? null : Number(row.UpdTime);
+      if (!Number.isFinite(current) || current !== expected) {
+        toFix.push({ id: row.id, expected, current: row.UpdTime });
+      }
+    }
+
+    if (!toFix.length) {
+      return ReturnJSON({ ok: true, msg: "????????????????", data: [], total: 0 }, 200);
+    }
+
+    const stmts = toFix.map((item) =>
+      db.prepare("UPDATE TeamOrder SET UpdTime = ? WHERE id = ?").bind(item.expected, item.id),
+    );
+    await db.batch(stmts);
+
+    return ReturnJSON(
+      {
+        ok: true,
+        msg: `??? ${toFix.length} ?????????AddTime + 31??`,
+        data: toFix,
+        total: toFix.length,
+      },
+      200,
+    );
+  } catch (error) {
+    return ReturnJSON({ ok: false, msg: "????", error: String(error) }, 500);
+  }
+}
+, env) {
   const db = env.TokenD1;
   try {
     const { results = [] } = await db
