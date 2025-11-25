@@ -413,8 +413,8 @@ export async function Disable(data={},env){
   }
 }
 
-// 批量查询Team订单信息
-//Team ????????????? = ???? + 31 ?
+
+// Team order expiry fix: set UpdTime = AddTime + 31 days
 export async function TeamForlist(data = {}, env) {
   const db = env.TokenD1;
   const TARGET_SPAN_MS = 31 * 24 * 60 * 60 * 1000;
@@ -441,7 +441,7 @@ export async function TeamForlist(data = {}, env) {
     }
 
     if (!toFix.length) {
-      return ReturnJSON({ ok: true, msg: "????????????????", data: [], total: 0 }, 200);
+      return ReturnJSON({ ok: true, msg: "No update needed; expiry already correct", data: [], total: 0 }, 200);
     }
 
     const stmts = toFix.map((item) =>
@@ -452,48 +452,17 @@ export async function TeamForlist(data = {}, env) {
     return ReturnJSON(
       {
         ok: true,
-        msg: `??? ${toFix.length} ?????????AddTime + 31??`,
+        msg: `Normalized ${toFix.length} orders (AddTime + 31 days)`,
         data: toFix,
         total: toFix.length,
       },
       200,
     );
   } catch (error) {
-    return ReturnJSON({ ok: false, msg: "????", error: String(error) }, 500);
+    return ReturnJSON({ ok: false, msg: "Normalization failed", error: String(error) }, 500);
   }
 }
-, env) {
-  const db = env.TokenD1;
-  try {
-    const { results = [] } = await db
-      .prepare(
-        `
-        SELECT
-          Order_us_Email AS email,
-          TeamCard AS redeemCode,
-          AddTime AS startTime,
-          UpdTime AS endTime
-        FROM TeamOrder
-        ORDER BY AddTime DESC
-      `,
-      )
-      .all();
 
-    const dataList = results.map((item) => ({
-      email: item.email,
-      redeemCode: item.redeemCode,
-      startTime: item.startTime,
-      endTime: item.endTime,
-    }));
-
-    return ReturnJSON(
-      { ok: true, msg: "Team orders fetched", data: dataList, total: dataList.length },
-      200,
-    );
-  } catch (error) {
-    return ReturnJSON({ ok: false, msg: "Team orders query failed", error: String(error) }, 500);
-  }
-}
 export async function GenghuanTeam(data={},env){
   const db = env.TokenD1
   const {id} = data
