@@ -414,10 +414,10 @@ export async function Disable(data={},env){
 }
 
 
-// Team order expiry fix: set UpdTime = AddTime + 31 days
+// Team order expiry fix: set UpdTime = AddTime + 30 days
 export async function TeamForlist(data = {}, env) {
   const db = env.TokenD1;
-  const TARGET_SPAN_MS = 31 * 24 * 60 * 60 * 1000;
+  const TARGET_SPAN_MS = 30 * 24 * 60 * 60 * 1000;
   try {
     const { results = [] } = await db
       .prepare(
@@ -452,7 +452,7 @@ export async function TeamForlist(data = {}, env) {
     return ReturnJSON(
       {
         ok: true,
-        msg: `Normalized ${toFix.length} orders (AddTime + 31 days)`,
+        msg: `Normalized ${toFix.length} orders (AddTime + 30 days)`,
         data: toFix,
         total: toFix.length,
       },
