@@ -572,18 +572,31 @@ export async function ADDTime(data={},env) {
       return ReturnJSON({ ok: true, msg: "暂无到期订单", data: [], total: 0 }, 200);
     }
     const ids = expired.map((item) => item.id).filter((id) => id !== undefined && id !== null);
-    if (ids.length) {
-      const placeholders = ids.map(() => '?').join(', ');
-      await db
-        .prepare(`UPDATE TeamOrder SET TeamOrderState = 'o3' WHERE id IN (${placeholders})`)
-        .bind(...ids)
-        .run();
+    const BATCH_SIZE = 50;
+
+    const chunkedUpdates = [];
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const chunk = ids.slice(i, i + BATCH_SIZE);
+      const placeholders = chunk.map(() => '?').join(', ');
+      chunkedUpdates.push(
+        db
+          .prepare(`UPDATE TeamOrder SET TeamOrderState = 'o3' WHERE id IN (${placeholders})`)
+          .bind(...chunk)
+          .run(),
+      );
     }
-    const updated = await db
-      .prepare(`SELECT * FROM TeamOrder WHERE id IN (${ids.map(() => '?').join(', ')})`)
-      .bind(...ids)
-      .all();
-    const updatedList = updated?.results ?? [];
+    await Promise.all(chunkedUpdates);
+
+    const updatedList = [];
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const chunk = ids.slice(i, i + BATCH_SIZE);
+      const placeholders = chunk.map(() => '?').join(', ');
+      const chunkRes = await db
+        .prepare(`SELECT * FROM TeamOrder WHERE id IN (${placeholders})`)
+        .bind(...chunk)
+        .all();
+      updatedList.push(...(chunkRes?.results ?? []));
+    }
     return ReturnJSON(
       { ok: true, msg: "Expired orders updated", data: updatedList, total: updatedList.length },
       200,
